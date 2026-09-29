@@ -712,7 +712,7 @@ export default function DepositPage() {
         }
         .recharge-reference .amount-panel {
           margin: 0 18px 18px;
-          padding: 17px 14px 14px;
+          padding: 12px 14px;
           border-radius: 15px;
           background: white;
         }
@@ -720,7 +720,7 @@ export default function DepositPage() {
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 3px 0 11px;
+          padding: 2px 0 8px;
           border-bottom: 1px solid #dedede;
           color: #292929;
           font-size: 17px;
@@ -737,17 +737,17 @@ export default function DepositPage() {
         .recharge-reference .preset-grid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 9px 10px;
-          margin-top: 16px;
+          gap: 6px 8px;
+          margin-top: 10px;
         }
         .recharge-reference .preset {
           min-width: 0;
-          height: 54px;
+          height: 46px;
           border: 1px solid #a8a8a8;
           border-radius: 7px;
           background: white;
           color: #343434;
-          font-size: 19px;
+          font-size: 18px;
           font-weight: 500;
         }
         .recharge-reference .preset.active {
@@ -758,10 +758,10 @@ export default function DepositPage() {
         }
         .recharge-reference .amount-input {
           display: flex;
-          height: 55px;
+          height: 48px;
           align-items: center;
           overflow: hidden;
-          margin-top: 16px;
+          margin-top: 10px;
           border: 1px solid #c9c9c9;
           border-radius: 5px;
           background: white;
@@ -853,8 +853,8 @@ export default function DepositPage() {
           .recharge-reference .amount-panel,
           .recharge-reference .country-panel,
           .recharge-reference .instructions { margin-right: 14px; margin-left: 14px; }
-          .recharge-reference .preset-grid { gap: 8px; }
-          .recharge-reference .preset { height: 50px; font-size: 17px; }
+          .recharge-reference .preset-grid { gap: 6px; }
+          .recharge-reference .preset { height: 44px; font-size: 17px; }
           .recharge-reference .continue { width: calc(100% - 28px); }
           .recharge-reference .instructions { padding: 15px 12px; }
         }

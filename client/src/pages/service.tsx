@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ExternalLink, Headset, MessageCircle, Send, UsersRound } from "lucide-react";
 import { Link } from "wouter";
-import supportIllustration from "@assets/no-data-CHEGY3VX_1790677728650.png";
+import supportIllustration from "@assets/responsable-du-support-client-illustration-svg-download-png-38_1790709748517.png";
 import telegramIcon from "@assets/tg-1_1790677728702.png";
 import "./service.css";
 
@@ -64,7 +64,7 @@ export default function ServicePage() {
             <img
               className="service-client-hero-image"
               src={supportIllustration}
-              alt="Illustration d'une personne consultant un livre"
+              alt="Illustration d'une conseillère du service client répondant à un appel"
             />
             <div className="service-client-hero-copy">
               <h2 id="service-client-title">Service client</h2>
