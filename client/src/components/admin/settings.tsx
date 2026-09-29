@@ -228,6 +228,7 @@ export default function AdminSettings({ isSuperAdmin }: AdminSettingsProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settings/withdrawal"] });
       queryClient.invalidateQueries({ queryKey: ["/api/settings/links"] });
       toast({ title: "Paramètres enregistrés !" });
     },

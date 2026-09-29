@@ -36,7 +36,6 @@ export default function ProductDetailsPage() {
   } = useQuery<ProductWithClaimStatus[]>({
     queryKey: ["/api/products"],
     enabled: Boolean(user) && validProductId,
-    refetchOnWindowFocus: true,
   });
 
   const product = products.find((item) => item.id === productId && item.isActive);

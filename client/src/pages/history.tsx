@@ -149,14 +149,17 @@ export default function HistoryPage() {
 
   const { data: deposits = [], isLoading: depositsLoading } = useQuery<Deposit[]>({
     queryKey: ["/api/deposits/history"],
+    enabled: Boolean(user) && activeTab === "deposits",
   });
 
   const { data: withdrawals = [], isLoading: withdrawalsLoading } = useQuery<Withdrawal[]>({
     queryKey: ["/api/withdrawals/history"],
+    enabled: Boolean(user) && activeTab === "withdrawals",
   });
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
+    enabled: Boolean(user) && activeTab === "balance",
   });
 
   const isPendingDeposit = (deposit: Deposit) =>

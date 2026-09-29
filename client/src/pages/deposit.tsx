@@ -4,16 +4,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ChevronLeft, Info, Copy, CheckCircle, Upload, Phone, Loader2,
-  ImageIcon, ArrowRight, Zap, RefreshCw, ExternalLink,
+  ChevronLeft, Copy, CheckCircle, Upload, Phone, Loader2,
+  ImageIcon, ArrowRight, Zap, RefreshCw, ExternalLink, AlertCircle,
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import type { ApiCountry } from "@/lib/countries";
 import type { PaymentNumber } from "@shared/schema";
 import historyIcon from "@assets/20260410_193219_1787363717022.png";
-import { JOHN_DEERE_PHOTOS } from "@/lib/john-deere-assets";
-
-const rechargeReference = JOHN_DEERE_PHOTOS.dealership;
+import depositBrandMark from "@assets/téléchargement_-_2026-09-29T140846.267_1790693223891.png";
+import bankCardIcon from "@assets/bankCard-CnRlNHo8_(1)_1790705182033.png";
 
 const TON_GREEN = "#367C2B";
 const TON_GREEN_DARK = "#25591C";
@@ -51,6 +50,7 @@ export default function DepositPage() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>("amount");
@@ -559,7 +559,7 @@ export default function DepositPage() {
       wpInitiateMutation.mutate();
       return;
     }
-    window.location.href = `/robotpay?amount=${encodeURIComponent(Number(amount))}&country=${encodeURIComponent(depositCountry)}`;
+    navigate(`/robotpay?amount=${encodeURIComponent(Number(amount))}&country=${encodeURIComponent(depositCountry)}`);
   };
 
   const getOperatorIcon = (name: string): string | null => {
@@ -589,10 +589,10 @@ export default function DepositPage() {
 
   // ── STEP 1: Amount ─────────────────────────────────────────────────────────
   if (step === "amount") return (
-    <main className="recharge-reference min-h-screen bg-[#f7f6eb]">
+    <main className="recharge-reference min-h-screen bg-[#f7f6f3]">
       <style>{`
         .recharge-reference {
-          color: #181818;
+          color: #202124;
           font-family: Inter, Arial, sans-serif;
         }
         .recharge-reference .recharge-screen {
@@ -601,32 +601,56 @@ export default function DepositPage() {
           min-height: 100vh;
           margin: 0 auto;
           overflow: hidden;
-          background: #f7f6eb;
+          padding-bottom: 28px;
+          background: #f7f6f3;
         }
-        .recharge-reference .recharge-hero {
+        .recharge-reference .recharge-topbar {
           position: relative;
-          height: min(33.84vw, 169px);
-          min-height: 135px;
-          overflow: hidden;
-          background: #ffde00;
+          display: flex;
+          height: 60px;
+          align-items: center;
+          justify-content: center;
+          background: ${TON_GREEN_DARK};
+          color: white;
+        }
+        .recharge-reference .recharge-back {
+          position: absolute;
+          left: 15px;
+          display: grid;
+          width: 40px;
+          height: 40px;
+          place-items: center;
+          color: white;
+        }
+        .recharge-reference .recharge-brand {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 20px;
+          font-weight: 500;
+        }
+        .recharge-reference .brand-mark {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          object-fit: cover;
         }
         .recharge-reference .history-button {
           position: absolute;
-          z-index: 3;
-          top: 14px;
-          right: 16px;
+          top: 8px;
+          right: 14px;
           display: grid;
-          width: 44px;
-          height: 44px;
+          width: 42px;
+          height: 42px;
           place-items: center;
           border: 0;
-          border-radius: 12px;
-          background: rgba(255,255,255,.24);
+          border-radius: 50%;
+          background: rgba(255,255,255,.15);
         }
         .recharge-reference .history-icon {
-          width: 30px;
-          height: 30px;
-          background: #367c2b;
+          width: 24px;
+          height: 24px;
+          background: white;
           -webkit-mask-image: url("${historyIcon}");
           mask-image: url("${historyIcon}");
           -webkit-mask-position: center;
@@ -636,174 +660,276 @@ export default function DepositPage() {
           -webkit-mask-size: contain;
           mask-size: contain;
         }
-        .recharge-reference .recharge-hero img {
-          width: 100%;
-          height: auto;
-          transform: translateY(-10.55%);
+        .recharge-reference .recharge-hero {
+          position: relative;
+          display: flex;
+          height: 124px;
+          align-items: center;
+          margin: 16px 18px 0;
+          padding: 0 18px;
+          overflow: hidden;
+          border: 2px solid rgba(255,255,255,.8);
+          border-radius: 24px 24px 0 0;
+          background: ${TON_GRADIENT};
+          color: white;
+        }
+        .recharge-reference .minimum-label {
+          position: relative;
+          z-index: 1;
+          max-width: 75%;
+          font-size: 16px;
+          font-weight: 500;
+          line-height: 1.4;
+        }
+        .recharge-reference .gift-illustration {
+          position: absolute;
+          right: 12px;
+          bottom: -8px;
+          font-size: 76px;
+          line-height: 1;
+          filter: drop-shadow(0 3px 2px rgba(0,0,0,.18));
           pointer-events: none;
         }
-        .recharge-reference .recharge-back {
-          position: absolute;
-          top: 50%;
-          left: 24px;
-          width: 40px;
-          height: 40px;
-          transform: translateY(-50%);
+        .recharge-reference .balance-card {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          min-height: 96px;
+          align-items: center;
+          justify-content: center;
+          margin: -23px 18px 20px;
+          border-radius: 24px;
+          background: white;
+          box-shadow: 0 2px 8px rgba(24,37,49,.04);
+          color: #777;
+          font-size: 17px;
+        }
+        .recharge-reference .balance-value {
+          margin-left: 7px;
+          color: #df8a12;
+          font-size: 22px;
+          font-weight: 700;
         }
         .recharge-reference .amount-panel {
-          min-height: 238px;
-          padding: 29px 25px 35px;
+          margin: 0 18px 18px;
+          padding: 17px 14px 14px;
+          border-radius: 15px;
           background: white;
-          border-radius: 0 0 8px 8px;
         }
-        .recharge-reference .preset-row {
+        .recharge-reference .amount-heading {
           display: flex;
-          gap: 18px;
+          align-items: center;
+          gap: 8px;
+          padding: 3px 0 11px;
+          border-bottom: 1px solid #dedede;
+          color: #292929;
+          font-size: 17px;
+          font-weight: 500;
+        }
+        .recharge-reference .amount-heading-icon {
+          flex: 0 0 auto;
+          width: 23px;
+          height: 23px;
+          object-fit: contain;
+          filter: grayscale(1) contrast(1.15);
+          mix-blend-mode: multiply;
+        }
+        .recharge-reference .preset-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 9px 10px;
+          margin-top: 16px;
         }
         .recharge-reference .preset {
-          width: 82px;
-          height: 50px;
-          border-radius: 10px;
-          background: #eeeeee;
-          color: #24252a;
-          font-size: 15px;
+          min-width: 0;
+          height: 54px;
+          border: 1px solid #a8a8a8;
+          border-radius: 7px;
+          background: white;
+          color: #343434;
+          font-size: 19px;
           font-weight: 500;
         }
         .recharge-reference .preset.active {
+          border-color: ${TON_GREEN};
           background: ${TON_GRADIENT};
           color: white;
-          box-shadow: 0 2px 4px rgba(247,178,0,.14);
-        }
-        .recharge-reference .amount-label {
-          margin: 25px 0 23px 16px;
-          color: #c98e41;
-          font-size: 16px;
-          font-weight: 400;
+          box-shadow: 0 2px 4px rgba(0,84,145,.15);
         }
         .recharge-reference .amount-input {
           display: flex;
           height: 55px;
           align-items: center;
           overflow: hidden;
-          border-radius: 11px;
-          background: #f5f2f0;
+          margin-top: 16px;
+          border: 1px solid #c9c9c9;
+          border-radius: 5px;
+          background: white;
         }
         .recharge-reference .amount-input input {
           width: 100%;
           height: 100%;
           min-width: 0;
-          padding: 0 14px;
+          padding: 0 12px;
           border: 0;
           outline: 0;
-          color: #787878;
+          color: #30323b;
           background: transparent;
-          font-size: 19px;
+          font-size: 17px;
         }
-        .recharge-reference .currency {
-          padding: 0 13px 0 0;
-          color: #707070;
-          font-size: 24px;
-          font-weight: 400;
+        .recharge-reference .amount-input input::placeholder { color: #777; opacity: 1; }
+        .recharge-reference .currency-prefix {
+          flex: 0 0 auto;
+          padding: 0 10px 0 13px;
+          color: #30323b;
+          font-size: 18px;
+        }
+        .recharge-reference .country-panel {
+          margin: 0 18px 16px;
+          padding: 14px;
+          border-radius: 15px;
+          background: white;
+        }
+        .recharge-reference .country-label {
+          display: block;
+          margin-bottom: 8px;
+          color: #292929;
+          font-size: 15px;
+          font-weight: 600;
+        }
+        .recharge-reference .country-select {
+          width: 100%;
+          height: 48px;
+          padding: 0 12px;
+          border: 1px solid #c9c9c9;
+          border-radius: 6px;
+          background: white;
+          color: #30323b;
+          font-size: 15px;
         }
         .recharge-reference .continue {
           display: flex;
-          width: 231px;
-          height: 52px;
+          width: calc(100% - 36px);
+          height: 60px;
           align-items: center;
           justify-content: center;
-          margin: 30px auto 0;
-          border-radius: 28px;
+          margin: 0 auto 16px;
+          border: 0;
+          border-radius: 32px;
           background: ${TON_GRADIENT};
           color: white;
-          font-size: 18px;
-          font-weight: 400;
-          box-shadow: 0 2px 4px rgba(236,165,0,.16);
+          font-size: 21px;
+          font-weight: 500;
+          box-shadow: 0 3px 5px rgba(233,168,0,.35);
+        }
+        .recharge-reference .continue:disabled {
+          cursor: not-allowed;
+          opacity: .55;
         }
         .recharge-reference .instructions {
-          padding: 25px 9px 40px;
-          color: #151515;
+          margin: 0 18px;
+          padding: 17px 14px 14px;
+          border-radius: 15px;
+          background: white;
+          color: #292929;
         }
         .recharge-reference .instructions-title {
-          margin-bottom: 28px;
-          font-size: 17px;
-          font-weight: 800;
-        }
-        .recharge-reference .instructions-title::before {
-          content: "▰";
-          margin-right: 8px;
-          color: #f3c414;
-          font-size: 18px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 10px;
+          font-size: 16px;
+          font-weight: 700;
         }
         .recharge-reference .instruction {
-          position: relative;
-          margin: 0 0 25px 26px;
-          font-size: 17px;
-          font-weight: 500;
-          line-height: 1.65;
+          margin: 0 0 10px;
+          font-size: 15px;
+          font-weight: 400;
+          line-height: 1.45;
         }
-        .recharge-reference .instruction::before {
-          content: "◆";
-          position: absolute;
-          left: -20px;
-          top: 2px;
-          color: #367c2b;
-          font-size: 10px;
-        }
-        .recharge-reference .instruction strong { font-weight: 800; }
-        @media (max-width: 360px) {
-          .recharge-reference .amount-panel { padding-right: 18px; padding-left: 18px; }
-          .recharge-reference .preset-row { gap: 10px; }
-          .recharge-reference .preset { flex: 1; width: auto; }
-          .recharge-reference .instruction { font-size: 15px; }
+        .recharge-reference .instruction:last-child { margin-bottom: 0; }
+        .recharge-reference .instruction-number { font-weight: 500; }
+        @media (max-width: 380px) {
+          .recharge-reference .amount-panel,
+          .recharge-reference .country-panel,
+          .recharge-reference .instructions { margin-right: 14px; margin-left: 14px; }
+          .recharge-reference .preset-grid { gap: 8px; }
+          .recharge-reference .preset { height: 50px; font-size: 17px; }
+          .recharge-reference .continue { width: calc(100% - 28px); }
+          .recharge-reference .instructions { padding: 15px 12px; }
         }
       `}</style>
 
       <div className="recharge-screen">
-        <section className="recharge-hero" aria-label="Recharger">
-          <img src={rechargeReference} alt="" />
+        <header className="recharge-topbar">
+          <Link href="/account" className="recharge-back" aria-label="Retour au compte">
+            <ChevronLeft aria-hidden="true" />
+          </Link>
+          <div className="recharge-brand">
+            <img className="brand-mark" src={depositBrandMark} alt="" />
+            <span>Recharger</span>
+          </div>
           <Link href="/history">
-            <button className="history-button" aria-label="Historique des transactions">
+            <span className="history-button" role="button" aria-label="Historique des transactions">
               <span className="history-icon" aria-hidden="true" />
-            </button>
+            </span>
           </Link>
-          <Link href="/account">
-            <button className="recharge-back" aria-label="Retour" />
-          </Link>
+        </header>
+
+        <section className="recharge-hero" aria-label="Montant minimum de recharge">
+          <p className="minimum-label">Recharge minimum : {MIN_DEPOSIT.toLocaleString("fr-FR")} {currency}</p>
+          <span className="gift-illustration" aria-hidden="true">🎁</span>
+        </section>
+
+        <section className="balance-card" aria-label="Solde du compte">
+          <span>Solde du compte :</span>
+          <strong className="balance-value">
+            {Number.parseFloat(user.balance || "0").toLocaleString("fr-FR", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })} {currency}
+          </strong>
         </section>
 
         <section className="amount-panel" aria-label="Montant de recharge">
-          <div className="preset-row">
-            {[3000, 12500, 32000].map((preset) => (
+          <div className="amount-heading">
+            <img className="amount-heading-icon" src={bankCardIcon} alt="" aria-hidden="true" />
+            <span>Sélectionner le montant de recharge</span>
+          </div>
+
+          <div className="preset-grid">
+            {[3000, 3500, 7000, 15000, 30000, 50000, 100000, 200000, 500000].map((preset) => (
               <button
                 key={preset}
                 className={`preset ${amount === preset ? "active" : ""}`}
                 onClick={() => setAmount(preset)}
+                aria-pressed={amount === preset}
               >
                 {preset}
               </button>
             ))}
           </div>
 
-          <p className="amount-label">Veuillez saisir le montant de recharge</p>
           <label className="amount-input">
+            <span className="currency-prefix">{currency}</span>
             <input
               type="number"
               inputMode="numeric"
               value={amount}
               onChange={(event) => setAmount(event.target.value ? Number(event.target.value) : "")}
+              placeholder="Saisir un autre montant"
               aria-label="Montant de recharge"
             />
-            <span className="currency">{currency}</span>
           </label>
         </section>
 
-        <section className="mx-auto mt-2 w-[88%]" aria-label="Pays du paiement">
-          <label htmlFor="deposit-country" className="mb-2 block text-sm font-semibold text-gray-800">Pays du paiement</label>
+        <section className="country-panel" aria-label="Pays du paiement">
+          <label htmlFor="deposit-country" className="country-label">Pays du paiement</label>
           <select
             id="deposit-country"
             value={depositCountry}
             onChange={(event) => setDepositCountry(event.target.value)}
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 outline-none"
+            className="country-select"
           >
             <option value="">Sélectionnez un pays</option>
             {activeDepositCountries.map((item) => (
@@ -817,15 +943,16 @@ export default function DepositPage() {
           onClick={handleAmountNext}
           disabled={!depositCountry || inpayInitiateMutation.isPending || wpInitiateMutation.isPending}
         >
-          Recharger maintenant
+          {(inpayInitiateMutation.isPending || wpInitiateMutation.isPending) ? "Chargement…" : "Recharger"}
         </button>
 
         <section className="instructions" aria-label="Instructions de recharge">
-          <h2 className="instructions-title">Instructions de Recharge :</h2>
-          <p className="instruction"><strong>Montant minimum de recharge :</strong> {MIN_DEPOSIT.toLocaleString("fr-FR")} {currency}</p>
-          <p className="instruction"><strong>Vérifiez attentivement vos informations de compte</strong> lors du virement pour éviter toute erreur de paiement</p>
-          <p className="instruction"><strong>Chaque commande possède ses propres informations de paiement</strong> ; ne réutilisez pas les informations précédentes pour un second paiement</p>
-          <p className="instruction"><strong>Après un virement réussi,</strong> veuillez patienter 10 à 30 minutes.</p>
+          <h2 className="instructions-title">
+            <AlertCircle aria-hidden="true" className="h-6 w-6 fill-red-600 text-white" />
+            Rappel important
+          </h2>
+          <p className="instruction"><span className="instruction-number">1.</span> Le montant minimum de dépôt est de {MIN_DEPOSIT.toLocaleString("fr-FR")} {currency}.</p>
+          <p className="instruction"><span className="instruction-number">2.</span> Si votre rechargement n’apparaît pas sur votre compte, contactez immédiatement le service client officiel.</p>
         </section>
       </div>
     </main>

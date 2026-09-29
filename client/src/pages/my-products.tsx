@@ -29,12 +29,10 @@ export default function MyProductsPage() {
 
   const { data: products, isLoading: loadingProducts } = useQuery<ProductWithOwnership[]>({
     queryKey: ["/api/products"],
-    staleTime: 0,
   });
 
   const { data: userProducts, isLoading: loadingUserProducts } = useQuery<any[]>({
     queryKey: ["/api/user/products"],
-    staleTime: 0,
   });
 
   const purchaseMutation = useMutation({

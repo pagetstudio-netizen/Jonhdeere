@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -52,6 +52,17 @@ function PageLoading() {
       </span>
     </div>
   );
+}
+
+function DelayedPageLoading() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setVisible(true), 500);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return visible ? <PageLoading /> : null;
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -346,7 +357,7 @@ function App() {
       <TooltipProvider>
         <AuthProvider>
           <BrandThemeScope>
-            <Suspense fallback={<PageLoading />}>
+            <Suspense fallback={<DelayedPageLoading />}>
               <Router />
             </Suspense>
             <Toaster />
