@@ -39,6 +39,7 @@ const RewardsPage = lazy(() => import("@/pages/rewards"));
 const WithdrawalHistoryPage = lazy(() => import("@/pages/withdrawal-history"));
 const DepositOrdersPage = lazy(() => import("@/pages/deposit-orders"));
 const SalaryBonusPage = lazy(() => import("@/pages/salary-bonus"));
+const ProductDetailsPage = lazy(() => import("@/pages/product-details"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PageLoading() {
@@ -177,6 +178,11 @@ function Router() {
         <PublicRoute>
           <RegisterPage />
         </PublicRoute>
+      </Route>
+      <Route path="/products/:id">
+        <ProtectedRoute>
+          <ProductDetailsPage />
+        </ProtectedRoute>
       </Route>
       <Route path="/">
         <ProtectedRoute>
