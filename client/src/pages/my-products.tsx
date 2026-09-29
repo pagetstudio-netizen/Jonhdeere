@@ -7,25 +7,13 @@ import { getCountryByCode } from "@/lib/countries";
 import { Loader2 } from "lucide-react";
 import type { Product } from "@shared/schema";
 
-import emptyIllustration from "@assets/illustration-8_1784762965573.png";
-import productsReference from "@assets/20260822_123747_1787403034334.jpg";
-import productImage1 from "@assets/images_(67)_1787404892163.jpeg";
-import productImage2 from "@assets/maquininha-ton-e-boa_(1)_1787404928174.webp";
-import productImage3 from "@assets/images_(59)_1787404956774.jpeg";
-import productImage4 from "@assets/images_(58)_1787404956874.jpeg";
-import productImage5 from "@assets/images_(69)_1787404956897.jpeg";
-import productImage6 from "@assets/images_(67)_1787404956922.jpeg";
-import productImage7 from "@assets/images_(68)_1787404956953.jpeg";
+import {
+  getJohnDeereProductImage,
+  JOHN_DEERE_LOGO,
+  JOHN_DEERE_PHOTOS,
+} from "@/lib/john-deere-assets";
 
-const PRODUCT_IMAGES = [
-  productImage1,
-  productImage2,
-  productImage3,
-  productImage4,
-  productImage5,
-  productImage6,
-  productImage7,
-];
+const productsReference = JOHN_DEERE_PHOTOS.tractorExpo;
 
 interface ProductWithOwnership extends Product {
   isOwned: boolean;
@@ -176,12 +164,12 @@ export default function MyProductsPage() {
               </div>
             ) : paidProducts.length === 0 ? (
               <div className="empty">
-                <img src={emptyIllustration} alt="Vide" />
+                <img src={JOHN_DEERE_LOGO} alt="John Deere" />
                 <p>Aucun produit disponible</p>
               </div>
             ) : (
               paidProducts.map((product, idx) => {
-                const img = PRODUCT_IMAGES[idx % PRODUCT_IMAGES.length];
+                const img = getJohnDeereProductImage(product.imageUrl, idx);
                 return (
                   <div
                     key={product.id}
@@ -216,8 +204,8 @@ export default function MyProductsPage() {
                 </div>
               ) : allUserProducts.length === 0 ? (
                 <div className="empty">
-                  <img src={emptyIllustration} alt="Vide" />
-                  <p>Aucun produit Stone by ton</p>
+                  <img src={JOHN_DEERE_LOGO} alt="John Deere" />
+                  <p>Aucun produit John Deere</p>
                   <p className="text-sm text-gray-400">Achetez des produits pour commencer à gagner</p>
                 </div>
               ) : (
@@ -233,7 +221,7 @@ export default function MyProductsPage() {
                       className="product-card my-card"
                       data-testid={`my-product-card-${up.id}`}
                     >
-                      <div className="product-picture"><img src={PRODUCT_IMAGES[index % PRODUCT_IMAGES.length]} alt={up.product?.name || "Produit"} /></div>
+                      <div className="product-picture"><img src={getJohnDeereProductImage(up.product?.imageUrl, index)} alt={up.product?.name || "Produit"} /></div>
                       <div className="product-details">
                         <p className="product-name">{up.product?.name || "Produit"}</p>
                         <p className="product-price">{Number(up.product?.price || 0).toLocaleString("fr-FR")} {currency}</p>
@@ -292,7 +280,7 @@ export default function MyProductsPage() {
                 onClick={() => purchaseMutation.mutate(confirmProduct.id)}
                 disabled={purchaseMutation.isPending}
                 className="flex-1 py-4 font-bold text-base text-white flex items-center justify-center gap-1.5 active:opacity-90 transition-opacity disabled:opacity-60"
-                style={{ background: "#00CC2C" }}
+                style={{ background: "#367C2B" }}
                 data-testid="button-confirm-purchase"
               >
                 {purchaseMutation.isPending

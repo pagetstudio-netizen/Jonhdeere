@@ -6,7 +6,7 @@ import { ChevronLeft, Loader2, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
-import nodataImg from "@assets/nodata-da225bbb_(1)_1783249133513.png";
+import { JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
 
 interface Deposit {
   id: number;
@@ -201,7 +201,7 @@ export default function HistoryPage() {
       type: "registration",
       amount: "0",
       description: "Inscription",
-      createdAt: user.createdAt,
+      createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : String(user.createdAt),
     },
   ].sort((first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime());
 
@@ -488,7 +488,7 @@ export default function HistoryPage() {
               </div>
             ) : (
               <div className="history-empty">
-                <img src={nodataImg} alt="Aucune donnée" />
+                <img src={JOHN_DEERE_LOGO} alt="John Deere" />
                 <span>Plus de données</span>
               </div>
             )
@@ -528,7 +528,7 @@ export default function HistoryPage() {
               </div>
             ) : (
               <div className="history-empty">
-                <img src={nodataImg} alt="Aucune donnée" />
+                <img src={JOHN_DEERE_LOGO} alt="John Deere" />
                 <span>Plus de données</span>
               </div>
             )
@@ -556,7 +556,7 @@ export default function HistoryPage() {
             </div>
           ) : (
             <div className="history-empty">
-              <img src={nodataImg} alt="Aucune donnée" />
+              <img src={JOHN_DEERE_LOGO} alt="John Deere" />
               <span>Plus de données</span>
             </div>
           )}

@@ -10,11 +10,13 @@ import {
 import { Link } from "wouter";
 import type { ApiCountry } from "@/lib/countries";
 import type { PaymentNumber } from "@shared/schema";
-import rechargeReference from "@assets/IMG-20260821-WA0163_1787357122336.jpg";
 import historyIcon from "@assets/20260410_193219_1787363717022.png";
+import { JOHN_DEERE_PHOTOS } from "@/lib/john-deere-assets";
 
-const TON_GREEN = "#00CC2C";
-const TON_GREEN_DARK = "#009d22";
+const rechargeReference = JOHN_DEERE_PHOTOS.dealership;
+
+const TON_GREEN = "#367C2B";
+const TON_GREEN_DARK = "#25591C";
 const TON_GRADIENT = `linear-gradient(112deg, ${TON_GREEN} 0%, ${TON_GREEN_DARK} 100%)`;
 
 type Step =
@@ -587,7 +589,7 @@ export default function DepositPage() {
 
   // ── STEP 1: Amount ─────────────────────────────────────────────────────────
   if (step === "amount") return (
-    <main className="recharge-reference min-h-screen bg-[#f7f3f0]">
+    <main className="recharge-reference min-h-screen bg-[#f7f6eb]">
       <style>{`
         .recharge-reference {
           color: #181818;
@@ -599,14 +601,14 @@ export default function DepositPage() {
           min-height: 100vh;
           margin: 0 auto;
           overflow: hidden;
-          background: #f7f3f0;
+          background: #f7f6eb;
         }
         .recharge-reference .recharge-hero {
           position: relative;
           height: min(33.84vw, 169px);
           min-height: 135px;
           overflow: hidden;
-          background: #ffca29;
+          background: #ffde00;
         }
         .recharge-reference .history-button {
           position: absolute;
@@ -624,7 +626,7 @@ export default function DepositPage() {
         .recharge-reference .history-icon {
           width: 30px;
           height: 30px;
-          background: #3174d1;
+          background: #367c2b;
           -webkit-mask-image: url("${historyIcon}");
           mask-image: url("${historyIcon}");
           -webkit-mask-position: center;
@@ -744,7 +746,7 @@ export default function DepositPage() {
           position: absolute;
           left: -20px;
           top: 2px;
-          color: #579ad8;
+          color: #367c2b;
           font-size: 10px;
         }
         .recharge-reference .instruction strong { font-weight: 800; }

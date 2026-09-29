@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import tonLogo from "@assets/images_(25)_1787362424281.png";
+import { JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
 
 interface AboutModalProps {
   open: boolean;
@@ -13,24 +13,24 @@ export default function AboutModal({ open, onClose }: AboutModalProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
-              <img src={tonLogo} alt="Stone by ton" className="w-10 h-10 object-contain" />
+              <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-10 h-10 object-contain" />
             </div>
-            À propos de Stone by ton
+            À propos de John Deere
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 text-sm text-muted-foreground">
           <p>
-            Stone by ton est une entreprise française fondée en 2013, spécialisée dans la vente en ligne et physique de pierre naturelle, de travertin, de carrelage et de parements muraux.
+            John Deere, fondée en 1837 à Grand Detour dans l’Illinois, est un fabricant mondial d’équipements agricoles et un producteur majeur de machines de construction et d’entretien des espaces verts.
           </p>
           <p>
-            Basée à Six-Fours-les-Plages dans le Var, la marque propose une large gamme de revêtements pour les sols et les murs intérieurs ou extérieurs.
+            Son siège social se trouve à Moline, dans l’Illinois. Ses activités incluent les tracteurs, les moissonneuses-batteuses, les semoirs de précision, les équipements de fenaison et les machines de construction.
           </p>
           <div className="bg-secondary rounded-lg p-4 space-y-2">
             <h4 className="font-medium text-foreground">Nos avantages :</h4>
             <ul className="space-y-1">
               <li>- Revenus quotidiens automatiques</li>
-              <li>- Produits robotiques de qualité</li>
+              <li>- Équipements agricoles et de construction</li>
               <li>- Système de parrainage attractif</li>
               <li>- Support client disponible</li>
             </ul>

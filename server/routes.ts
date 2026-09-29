@@ -137,7 +137,7 @@ async function getCachedBlockedIps(): Promise<string[]> {
     return blockedIpsCache.values;
   }
 
-  const values = getBlockedIps(await storage.getSetting("blockedIps"));
+  const values = getBlockedIps((await storage.getSetting("blockedIps")) ?? undefined);
   blockedIpsCache = { values, expiresAt: now + BLOCKED_IP_CACHE_TTL_MS };
   return values;
 }
@@ -151,6 +151,24 @@ function updateBlockedIpsCache(values: string[]) {
 // --- end brute-force protection ---
 
 const WITHDRAWAL_PREPAYMENT_RATE = 25;
+
+function getRouteParam(value: string | string[]): string {
+  return Array.isArray(value) ? value[0] ?? "" : value;
+}
+
+async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number; amount: number }) {
+  const user = await storage.getUser(withdrawal.userId);
+  if (!user) return;
+  await storage.updateUser(user.id, {
+    balance: (parseFloat(user.balance) + withdrawal.amount).toFixed(2),
+  });
+  await storage.createTransaction({
+    userId: user.id,
+    type: "withdrawal_refund",
+    amount: withdrawal.amount.toString(),
+    description: `Remboursement retrait InPay #${withdrawal.id}`,
+  });
+}
 
 async function creditApprovedDeposit(deposit: {
   id: number;
@@ -547,7 +565,7 @@ export async function registerRoutes(
 
   app.post("/api/products/:id/purchase", requireAuth, async (req, res) => {
     try {
-      const productId = parseInt(req.params.id);
+      const productId = parseInt(getRouteParam(req.params.id));
       const product = await storage.getProduct(productId);
       
       if (!product) {
@@ -567,7 +585,7 @@ export async function registerRoutes(
 
   app.post("/api/products/:id/claim-free", requireAuth, async (req, res) => {
     try {
-      const productId = parseInt(req.params.id);
+      const productId = parseInt(getRouteParam(req.params.id));
       const product = await storage.getProduct(productId);
       
       if (!product || !product.isFree) {
@@ -816,7 +834,7 @@ export async function registerRoutes(
 
   app.post("/api/staking/purchase/:id", requireAuth, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(getRouteParam(req.params.id));
       const staking = await storage.purchaseStaking(req.session.userId!, id);
       res.json(staking);
     } catch (error: any) {
@@ -867,7 +885,7 @@ export async function registerRoutes(
 
   app.put("/api/admin/staking/products/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(getRouteParam(req.params.id));
       const { name, description, price, returnAmount, lockDays, launchDate, imageUrl, isActive } = req.body;
       const sp = await storage.updateStakingProduct(id, {
         name, description,
@@ -885,7 +903,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/staking/products/:id", requireAdmin, async (req, res) => {
     try {
-      await storage.deleteStakingProduct(parseInt(req.params.id));
+      await storage.deleteStakingProduct(parseInt(getRouteParam(req.params.id)));
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -960,7 +978,7 @@ export async function registerRoutes(
 
   app.put("/api/admin/payment-numbers/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(getRouteParam(req.params.id));
       const { ownerName, phone, paymentLink, operatorName, country, logoUrl, isActive } = req.body;
       const normalizedLink = typeof paymentLink === "string" ? paymentLink.trim() : "";
       let normalizedPhone: string | null | undefined;
@@ -989,7 +1007,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/payment-numbers/:id", requireAdmin, async (req, res) => {
     try {
-      await storage.deletePaymentNumber(parseInt(req.params.id));
+      await storage.deletePaymentNumber(parseInt(getRouteParam(req.params.id)));
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -1265,7 +1283,7 @@ export async function registerRoutes(
   // Verify payment status (Soleaspay)
   app.get("/api/deposits/:id/verify", requireAuth, async (req, res) => {
     try {
-      const depositId = parseInt(req.params.id);
+      const depositId = parseInt(getRouteParam(req.params.id));
       const deposit = await storage.getDeposit(depositId);
       
       if (!deposit) {
@@ -1310,19 +1328,6 @@ export async function registerRoutes(
                 await storage.processDepositReferralCommissions(deposit.userId, deposit.amount);
               }
 
-async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number; amount: number }) {
-  const user = await storage.getUser(withdrawal.userId);
-  if (!user) return;
-  await storage.updateUser(user.id, {
-    balance: (parseFloat(user.balance) + withdrawal.amount).toFixed(2),
-  });
-  await storage.createTransaction({
-    userId: user.id,
-    type: "withdrawal_refund",
-    amount: withdrawal.amount.toString(),
-    description: `Remboursement retrait InPay #${withdrawal.id}`,
-  });
-}
             }
           }
 
@@ -1567,7 +1572,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.get("/api/deposits/:id/ashtechpay-status", requireAuth, async (req, res) => {
     try {
-      const deposit = await storage.getDeposit(parseInt(req.params.id));
+      const deposit = await storage.getDeposit(parseInt(getRouteParam(req.params.id)));
       if (!deposit) return res.status(404).json({ message: "Dépôt non trouvé" });
       if (deposit.userId !== req.session.userId) return res.status(403).json({ message: "Accès refusé" });
       if (deposit.status === "approved" || deposit.status === "rejected") {
@@ -1615,7 +1620,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
   // Proxy: operators for a given country (public SendavaPay endpoint)
   app.get("/api/sendavapay/operators/:country", requireAuth, async (req, res) => {
     try {
-      const svCountry = toSendavapayCountry(req.params.country);
+      const svCountry = toSendavapayCountry(getRouteParam(req.params.country));
       const r = await fetch(
         `https://sendavapay.com/api/sdk/v1/operators/${svCountry}`
       );
@@ -1774,7 +1779,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
   // Poll payment status using GET /payment-status/:reference (lighter than verify-payment)
   app.get("/api/deposits/:id/sendavapay-status", requireAuth, async (req, res) => {
     try {
-      const depositId = parseInt(req.params.id);
+      const depositId = parseInt(getRouteParam(req.params.id));
       const deposit = await storage.getDeposit(depositId);
       if (!deposit) return res.status(404).json({ message: "Dépôt non trouvé" });
       if (deposit.userId !== req.session.userId) return res.status(403).json({ message: "Accès refusé" });
@@ -2235,7 +2240,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.delete("/api/wallets/:id", requireAuth, async (req, res) => {
     try {
-      await storage.deleteWallet(parseInt(req.params.id));
+      await storage.deleteWallet(parseInt(getRouteParam(req.params.id)));
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -2244,7 +2249,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.patch("/api/wallets/:id/default", requireAuth, async (req, res) => {
     try {
-      await storage.setDefaultWallet(req.session.userId!, parseInt(req.params.id));
+      await storage.setDefaultWallet(req.session.userId!, parseInt(getRouteParam(req.params.id)));
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -2282,7 +2287,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.post("/api/tasks/:id/claim", requireAuth, async (req, res) => {
     try {
-      await storage.claimTask(req.session.userId!, parseInt(req.params.id));
+      await storage.claimTask(req.session.userId!, parseInt(getRouteParam(req.params.id)));
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -2485,7 +2490,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.post("/api/admin/deposits/:id/approve", requireAdmin, async (req, res) => {
     try {
-      const deposit = await storage.claimAdminDepositApproval(parseInt(req.params.id), req.session.userId!);
+      const deposit = await storage.claimAdminDepositApproval(parseInt(getRouteParam(req.params.id)), req.session.userId!);
       if (!deposit) return res.status(409).json({ message: "Ce dépôt est déjà approuvé" });
 
       const user = await storage.getUser(deposit.userId);
@@ -2519,7 +2524,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
   app.post("/api/admin/deposits/:id/reject", requireAdmin, async (req, res) => {
     try {
       const { ban } = req.body;
-      const deposit = await storage.updateDeposit(parseInt(req.params.id), {
+      const deposit = await storage.updateDeposit(parseInt(getRouteParam(req.params.id)), {
         status: "rejected",
         processedAt: new Date(),
         processedBy: req.session.userId,
@@ -2579,7 +2584,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.post("/api/admin/withdrawals/:id/approve", requireAdmin, async (req, res) => {
     try {
-      const withdrawalId = parseInt(req.params.id);
+      const withdrawalId = parseInt(getRouteParam(req.params.id));
       const existingWithdrawal = await storage.getWithdrawals();
       const withdrawalData = existingWithdrawal.find(w => w.id === withdrawalId);
       
@@ -2602,7 +2607,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.post("/api/admin/withdrawals/:id/reject", requireAdmin, async (req, res) => {
     try {
-      const withdrawal = await storage.updateWithdrawal(parseInt(req.params.id), {
+      const withdrawal = await storage.updateWithdrawal(parseInt(getRouteParam(req.params.id)), {
         status: "rejected",
         processedAt: new Date(),
         processedBy: req.session.userId,
@@ -2624,7 +2629,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.post("/api/admin/withdrawals/:id/inpay", requireAdmin, async (req, res) => {
     try {
-      const withdrawalId = parseInt(req.params.id);
+      const withdrawalId = parseInt(getRouteParam(req.params.id));
       const allWithdrawals = await storage.getWithdrawals();
       const withdrawal = allWithdrawals.find((item) => item.id === withdrawalId);
       if (!withdrawal) return res.status(404).json({ message: "Retrait non trouvé" });
@@ -2669,7 +2674,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
       void sendTelegramInpayError({
         operation: "Retrait payout",
         error,
-        recordId: req.params.id,
+        recordId: getRouteParam(req.params.id),
       }).catch((notificationError) => {
         console.error("[telegram] InPay payout error notification failed:", notificationError.message);
       });
@@ -2698,7 +2703,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.get("/api/admin/users/:id/team", requireAdmin, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = parseInt(getRouteParam(req.params.id));
       const team = await storage.getDetailedTeam(userId);
       res.json(team);
     } catch (error: any) {
@@ -2708,8 +2713,8 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.post("/api/admin/users/:id/:action", requireAdmin, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
-      const action = req.params.action;
+      const userId = parseInt(getRouteParam(req.params.id));
+      const action = getRouteParam(req.params.action);
       const { value } = req.body;
       const adminUser = await storage.getUser(req.session.userId!);
 
@@ -2823,7 +2828,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.get("/api/admin/users/:id/products", requireAdmin, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = parseInt(getRouteParam(req.params.id));
       const userProductsList = await storage.getAllUserProducts(userId);
       res.json(userProductsList.map(up => ({
         id: up.userProduct.id,
@@ -2870,7 +2875,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.patch("/api/admin/products/:id", requireAdmin, async (req, res) => {
     try {
-      const product = await storage.updateProduct(parseInt(req.params.id), req.body);
+      const product = await storage.updateProduct(parseInt(getRouteParam(req.params.id)), req.body);
       await storage.logAdminAction(req.session.userId!, "update_product", null, `Produit ${product.id} modifié`);
       res.json(product);
     } catch (error: any) {
@@ -2880,7 +2885,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.delete("/api/admin/products/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(getRouteParam(req.params.id));
       await storage.deleteProduct(id);
       await storage.logAdminAction(req.session.userId!, "delete_product", null, `Produit ${id} supprimé`);
       res.json({ success: true });
@@ -2913,7 +2918,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.patch("/api/admin/channels/:id", requireAdmin, async (req, res) => {
     try {
-      const channel = await storage.updatePaymentChannel(parseInt(req.params.id), {
+      const channel = await storage.updatePaymentChannel(parseInt(getRouteParam(req.params.id)), {
         ...req.body,
         modifiedBy: req.session.userId,
       });
@@ -2926,7 +2931,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.delete("/api/admin/channels/:id", requireAdmin, async (req, res) => {
     try {
-      await storage.deletePaymentChannel(parseInt(req.params.id));
+      await storage.deletePaymentChannel(parseInt(getRouteParam(req.params.id)));
       await storage.logAdminAction(req.session.userId!, "delete_channel", null, `Canal supprimé`);
       res.json({ success: true });
     } catch (error: any) {
@@ -2997,7 +3002,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.delete("/api/admin/blocked-ips/:ip", requireAdmin, async (req, res) => {
     try {
-      const ip = decodeURIComponent(req.params.ip);
+      const ip = decodeURIComponent(getRouteParam(req.params.ip));
       const blockedIps = await getCachedBlockedIps();
       const nextIps = blockedIps.filter((value) => value !== ip);
       await storage.setSetting("blockedIps", JSON.stringify(nextIps), req.session.userId);
@@ -3088,7 +3093,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.delete("/api/admin/gift-codes/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(getRouteParam(req.params.id));
       await storage.deleteGiftCode(id);
       await storage.logAdminAction(req.session.userId!, "delete_gift_code", null, `Code cadeau supprimé: #${id}`);
       res.json({ success: true });
@@ -3157,7 +3162,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.get("/api/deposit/provider/:country", requireAuth, async (req, res) => {
     try {
-      const country = req.params.country.toUpperCase();
+      const country = getRouteParam(req.params.country).toUpperCase();
       const active = await storage.getActiveCountries();
       if (!active.some(c => c.code.toUpperCase() === country)) {
         return res.status(404).json({ message: "Pays indisponible" });
@@ -3214,7 +3219,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.put("/api/admin/countries/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(getRouteParam(req.params.id));
       const { code, name, currency, phonePrefix, operators, isActive } = req.body;
       const updateData: any = {};
       if (name !== undefined) updateData.name = name;
@@ -3231,7 +3236,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.delete("/api/admin/countries/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(getRouteParam(req.params.id));
       await storage.deleteCountry(id);
       res.json({ success: true });
     } catch (error: any) {
@@ -3262,7 +3267,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.post("/api/banker/deposits/:id/approve", requireBanker, async (req, res) => {
     try {
-      const deposit = await storage.updateDeposit(parseInt(req.params.id), {
+      const deposit = await storage.updateDeposit(parseInt(getRouteParam(req.params.id)), {
         status: "approved",
         processedAt: new Date(),
         processedBy: req.session.userId,
@@ -3282,7 +3287,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.post("/api/banker/deposits/:id/reject", requireBanker, async (req, res) => {
     try {
-      const deposit = await storage.updateDeposit(parseInt(req.params.id), {
+      const deposit = await storage.updateDeposit(parseInt(getRouteParam(req.params.id)), {
         status: "rejected",
         processedAt: new Date(),
         processedBy: req.session.userId,
@@ -3298,9 +3303,9 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
   app.post("/api/banker/withdrawals/:id/approve", requireBanker, async (req, res) => {
     try {
       const allWithdrawals = await storage.getWithdrawals();
-      const withdrawalData = allWithdrawals.find(w => w.id === parseInt(req.params.id));
+      const withdrawalData = allWithdrawals.find(w => w.id === parseInt(getRouteParam(req.params.id)));
       if (!withdrawalData) return res.status(404).json({ message: "Retrait non trouvé" });
-      const withdrawal = await storage.updateWithdrawal(parseInt(req.params.id), {
+      const withdrawal = await storage.updateWithdrawal(parseInt(getRouteParam(req.params.id)), {
         status: "approved",
         processedAt: new Date(),
         processedBy: req.session.userId,
@@ -3314,7 +3319,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
 
   app.post("/api/banker/withdrawals/:id/reject", requireBanker, async (req, res) => {
     try {
-      const withdrawal = await storage.updateWithdrawal(parseInt(req.params.id), {
+      const withdrawal = await storage.updateWithdrawal(parseInt(getRouteParam(req.params.id)), {
         status: "rejected",
         processedAt: new Date(),
         processedBy: req.session.userId,

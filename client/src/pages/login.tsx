@@ -9,7 +9,9 @@ import { useAuth } from "@/lib/auth";
 import { FALLBACK_COUNTRIES, type ApiCountry } from "@/lib/countries";
 import { CountrySelector } from "@/components/country-selector";
 import { ChevronRight, Loader2, LockKeyhole, Square } from "lucide-react";
-import loginIllustration from "@assets/images_(59)_1787397485505.jpeg";
+import { JOHN_DEERE_PHOTOS } from "@/lib/john-deere-assets";
+
+const loginIllustration = JOHN_DEERE_PHOTOS.tractorExpo;
 
 const loginSchema = z.object({
   phone: z.string().min(8, "Numéro de téléphone invalide"),
@@ -117,7 +119,7 @@ export default function LoginPage() {
 
       <div className="auth-screen">
         <section className="auth-panel">
-          <h1 className="auth-brand">Stone by ton</h1>
+          <h1 className="auth-brand">John Deere</h1>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <input type="hidden" {...form.register("country")} />
 
@@ -144,7 +146,7 @@ export default function LoginPage() {
               {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Se connecter"}
             </button>
           </form>
-          <img className="auth-illustration" src={loginIllustration} alt="Terminaux de paiement TON" />
+          <img className="auth-illustration" src={loginIllustration} alt="Équipements John Deere" />
         </section>
       </div>
 

@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, HelpCircle, Users } from "lucide-react";
 import { getCountryByCode } from "@/lib/countries";
 
-import globeImg from "@assets/images_(55)_1786844134544.jpeg";
+import { JOHN_DEERE_PHOTOS } from "@/lib/john-deere-assets";
 
 export default function RewardsPage() {
   const { user } = useAuth();
@@ -56,14 +56,14 @@ export default function RewardsPage() {
     <div className="flex flex-col min-h-full bg-gray-100">
       <div className="flex-1 overflow-y-auto pb-24">
 
-        <div className="relative px-4 pt-4 pb-6" style={{ background: "linear-gradient(180deg, #fff0eb 0%, #f5f5f5 100%)" }}>
+        <div className="relative px-4 pt-4 pb-6" style={{ background: "linear-gradient(180deg, #fff6bf 0%, #f7f6eb 100%)" }}>
           <button onClick={() => navigate("/account")} className="mb-3" data-testid="button-back">
             <ArrowLeft className="w-6 h-6 text-gray-700" />
           </button>
           <h1 className="text-xl font-bold text-gray-900 mb-4">Recevoir</h1>
 
-          <div className="relative rounded-2xl overflow-hidden" style={{ backgroundColor: "#2196F3" }}>
-            <img src={globeImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20" />
+          <div className="relative rounded-2xl overflow-hidden" style={{ backgroundColor: "#367C2B" }}>
+            <img src={JOHN_DEERE_PHOTOS.tractorExpo} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20" />
             <div className="relative z-10 flex items-center justify-between px-5 py-5">
               <div>
                 <p className="text-white/80 text-sm">{currency}</p>
@@ -81,7 +81,7 @@ export default function RewardsPage() {
 
         <div className="px-4 mt-2">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-1 h-5 rounded-full" style={{ backgroundColor: "#2196F3" }} />
+            <div className="w-1 h-5 rounded-full" style={{ backgroundColor: "#FFDE00" }} />
             <h2 className="text-base font-bold text-gray-900">Liste des taches</h2>
           </div>
 
@@ -97,7 +97,7 @@ export default function RewardsPage() {
                   className={`flex items-center px-4 py-4 gap-3 ${index < (tasks.length - 1) ? "border-b border-gray-100" : ""}`}
                   data-testid={`task-item-${task.id}`}
                 >
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: "#e3f2fd" }}>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: "#edf4e6" }}>
                     <Users className="w-5 h-5" style={{ color: "var(--ton-green)" }} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -115,7 +115,7 @@ export default function RewardsPage() {
                         onClick={() => claimMutation.mutate(task.id)}
                         disabled={claimMutation.isPending}
                         className="text-xs font-semibold px-3 py-1.5 rounded-md text-white"
-                        style={{ backgroundColor: "#2196F3" }}
+                        style={{ backgroundColor: "#367C2B" }}
                         data-testid={`button-claim-${task.id}`}
                       >
                         Recevoir

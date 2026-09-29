@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react";
 
 const LoginPage = lazy(() => import("@/pages/login"));
 const RegisterPage = lazy(() => import("@/pages/register"));
-const HomePage = lazy(() => import("@/pages/home"));
+const HomePage = lazy(() => import("@/pages/home-dashboard"));
 const TasksPage = lazy(() => import("@/pages/tasks"));
 const InvestPage = lazy(() => import("@/pages/invest"));
 const OrdersPage = lazy(() => import("@/pages/orders"));
@@ -138,7 +138,10 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background pb-16">
+    <div
+      className="min-h-screen bg-background"
+      style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom, 0px))" }}
+    >
       {children}
       <BottomNav />
     </div>
@@ -147,9 +150,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 function BrandThemeScope({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const isDashboard = location === "/";
+  const isRobotPay = location === "/robotpay";
 
-  return <div className={isDashboard ? undefined : "ton-theme"}>{children}</div>;
+  return <div className={isRobotPay ? "ton-theme" : "john-deere-theme"}>{children}</div>;
 }
 
 function Router() {

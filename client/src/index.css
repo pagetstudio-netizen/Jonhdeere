@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE - Stone by ton theme */
+/* LIGHT MODE - John Deere theme */
 :root {
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
@@ -93,10 +93,7 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
-/* TON green theme.
- * The dashboard keeps its own visual identity; App.tsx only adds this scope
- * to the other routes so the dashboard is not recolored by these overrides.
- */
+/* Legacy TON palette retained only for the untouched RobotPay route. */
 .ton-theme {
   --ton-green: #00cc2c;
   --ton-green-dark: #008f24;
@@ -130,9 +127,7 @@
   --chart-5: 85 60% 42%;
 }
 
-/* Recolor recurring hard-coded brand utilities without changing dashboard
- * styles, which intentionally lives outside .ton-theme.
- */
+/* Keep the legacy RobotPay palette isolated to its route-scoped wrapper. */
 .ton-theme [class~="text-[#3174d1]"],
 .ton-theme [class~="text-[#2196F3]"],
 .ton-theme [class~="text-[#1598e7]"],
@@ -178,6 +173,132 @@
 .ton-theme [style*="linear-gradient"][style*="#FF4500"],
 .ton-theme [style*="linear-gradient"][style*="#E03E00"] {
   color: white !important;
+}
+
+/* John Deere brand scope for every route except /robotpay. */
+.john-deere-theme {
+  --jd-green: #367c2b;
+  --jd-green-dark: #25591c;
+  --jd-yellow: #ffde00;
+  --jd-yellow-soft: #fff6bf;
+  --ton-green: var(--jd-green);
+  --ton-green-dark: var(--jd-green-dark);
+  --ton-green-deep: #194616;
+  --ton-green-soft: #edf4e6;
+  --ton-gradient: linear-gradient(112deg, var(--jd-green) 0%, var(--jd-green-dark) 100%);
+
+  --background: 48 32% 97%;
+  --foreground: 112 28% 13%;
+  --border: 89 19% 82%;
+  --card: 0 0% 100%;
+  --card-foreground: 112 28% 13%;
+  --card-border: 89 19% 87%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 112 28% 13%;
+  --popover-border: 89 19% 87%;
+  --primary: 111 48% 33%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 52 100% 91%;
+  --secondary-foreground: 112 32% 16%;
+  --muted: 52 30% 93%;
+  --muted-foreground: 105 10% 39%;
+  --accent: 52 100% 50%;
+  --accent-foreground: 112 35% 14%;
+  --input: 89 20% 81%;
+  --ring: 111 48% 33%;
+  --chart-1: 111 48% 33%;
+  --chart-2: 52 100% 50%;
+  --chart-3: 97 40% 46%;
+  --chart-4: 43 65% 45%;
+  --chart-5: 126 34% 24%;
+}
+
+.john-deere-theme .auth-reference {
+  background: #142a12;
+  color: #367c2b;
+}
+
+.john-deere-theme .auth-reference .auth-screen,
+.john-deere-theme .auth-reference .auth-panel {
+  background: #193618;
+}
+
+.john-deere-theme .auth-reference .auth-field {
+  box-shadow: 0 1px 2px rgba(37, 89, 28, .18);
+}
+
+.john-deere-theme .auth-reference .auth-field input {
+  color: #25591c;
+}
+
+.john-deere-theme .auth-reference .auth-field input::placeholder {
+  color: #367c2b;
+}
+
+.john-deere-theme .auth-reference .auth-prefix,
+.john-deere-theme .auth-reference .auth-field-icon {
+  color: #367c2b;
+}
+
+.john-deere-theme .auth-reference .auth-submit {
+  background: #ffde00;
+  color: #25591c;
+  box-shadow: 0 1px 2px rgba(37, 89, 28, .24);
+}
+
+.john-deere-theme .auth-reference .auth-submit:active {
+  background: #fff6bf;
+}
+
+.john-deere-theme [class~="text-[#3174d1]"],
+.john-deere-theme [class~="text-[#2196F3]"],
+.john-deere-theme [class~="text-[#1598e7]"],
+.john-deere-theme [class~="text-[#0789c9]"],
+.john-deere-theme [class~="text-[#7fc9ff]"],
+.john-deere-theme [class~="text-[#00CC2C]"],
+.john-deere-theme [class~="text-[#00cc2c]"],
+.john-deere-theme [class~="text-green-500"],
+.john-deere-theme [class~="text-green-600"],
+.john-deere-theme [class~="text-green-700"] {
+  color: var(--jd-green) !important;
+}
+
+.john-deere-theme [class~="bg-[#3174d1]"],
+.john-deere-theme [class~="bg-[#2196F3]"],
+.john-deere-theme [class~="bg-[#55c9e5]"],
+.john-deere-theme [class~="bg-[#00CC2C]"],
+.john-deere-theme [class~="bg-[#00cc2c]"],
+.john-deere-theme [class~="bg-green-500"],
+.john-deere-theme [class~="bg-green-600"] {
+  background-color: var(--jd-green) !important;
+}
+
+.john-deere-theme [class~="border-[#3174d1]"],
+.john-deere-theme [class~="border-[#2196F3]"],
+.john-deere-theme [class~="border-[#55c9e5]"],
+.john-deere-theme [class~="border-[#7fc9ff]"],
+.john-deere-theme [class~="border-[#00CC2C]"],
+.john-deere-theme [class~="border-[#00cc2c]"],
+.john-deere-theme [class~="border-green-500"] {
+  border-color: var(--jd-green) !important;
+}
+
+.john-deere-theme [style*="linear-gradient" i]:not([style*="url(" i]) {
+  background: var(--ton-gradient) !important;
+  color: #fff !important;
+}
+
+.john-deere-theme [style*="rgb(49, 116, 209)"],
+.john-deere-theme [style*="rgb(85, 201, 229)"],
+.john-deere-theme [style*="rgb(33, 150, 243)"],
+.john-deere-theme [style*="rgb(0, 204, 44)"] {
+  border-color: var(--jd-green) !important;
+  color: var(--jd-green) !important;
+}
+
+.john-deere-theme [class~="bg-[#FFDE00]"] {
+  background-color: var(--jd-yellow) !important;
+  color: #1c3416 !important;
 }
 
 .dark {
@@ -345,7 +466,7 @@
 
 /* Mobile bottom navigation */
 .bottom-nav {
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
 }
 
 .bottom-nav-icon {

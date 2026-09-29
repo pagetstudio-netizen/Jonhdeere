@@ -2,9 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 
-import serviceImage from "@assets/images_(59)_1787364932839.jpeg";
-import stoneTonLogo from "@assets/logo-ton_1787364932867.png";
-import tonMachinesBanner from "@assets/images_(70)_1787365314673.jpeg";
+import { JOHN_DEERE_LOGO, JOHN_DEERE_PHOTOS } from "@/lib/john-deere-assets";
+
+const serviceImage = JOHN_DEERE_PHOTOS.tractorService;
+const stoneTonLogo = JOHN_DEERE_LOGO;
+const tonMachinesBanner = JOHN_DEERE_PHOTOS.dealership;
 
 interface LinksSettings {
   supportLink: string;
@@ -71,18 +73,18 @@ export default function ServicePage() {
               <ChevronLeft aria-hidden="true" />
             </button>
           </Link>
-          <img className="service-logo" src={stoneTonLogo} alt="Stone by ton" />
+          <img className="service-logo" src={stoneTonLogo} alt="John Deere" />
           <h1 className="service-title">Service client</h1>
         </header>
 
         <section className="benefits" aria-label="Nos garanties">
-          <img className="benefit-banner" src={tonMachinesBanner} alt="Terminaux TON" />
+          <img className="benefit-banner" src={tonMachinesBanner} alt="Concessionnaire John Deere" />
         </section>
 
         <section className="telegram-section" aria-labelledby="telegram-heading">
           <h2 id="telegram-heading" className="telegram-title">Telegram</h2>
           <div className="telegram-grid">
-            <img className="bike-image" src={serviceImage} alt="Terminaux Stone by ton" />
+            <img className="bike-image" src={serviceImage} alt="Équipe John Deere et tracteur" />
             <div className="telegram-actions">
               {telegramLinks.map((link) => (
                 <button key={link.testId} type="button" className={`telegram-link ${link.size}`} onClick={() => window.open(link.href, "_blank")} data-testid={link.testId}>

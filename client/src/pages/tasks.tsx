@@ -7,14 +7,14 @@ import { getCountryByCode } from "@/lib/countries";
 import { ChevronLeft, Loader2, Trophy, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
 import type { Task } from "@shared/schema";
-import jollibeeImg from "@assets/images_(55)_1786844134544.jpeg";
-import emptyIllustration from "@assets/illustration-8_1784762965573.png";
-import tonLogo from "@assets/images_(25)_1787362424281.png";
+import { JOHN_DEERE_LOGO, JOHN_DEERE_PHOTOS } from "@/lib/john-deere-assets";
 import iconBronze from "@assets/344464_1773318022355.png";
 import iconArgent from "@assets/817729_1773318022328.png";
 import iconOr from "@assets/sac-argent-gros-tas-illustration-icone-argent-comptant-icone-p_1773318022388.jpg";
 import iconPlatine from "@assets/1751761_1773318022264.png";
 import iconDiamant from "@assets/3275655_1773318022415.png";
+
+const jollibeeImg = JOHN_DEERE_PHOTOS.dealership;
 
 interface TaskWithStatus extends Task {
   isCompleted: boolean;
@@ -84,7 +84,7 @@ export default function TasksPage() {
       <div className="relative overflow-hidden" style={{ height: "260px" }}>
         <img
           src={jollibeeImg}
-          alt="Stone by ton"
+          alt="John Deere"
           className="w-full h-full object-cover object-center"
         />
         {/* Dark gradient overlay */}
@@ -105,8 +105,8 @@ export default function TasksPage() {
           </Link>
           <div className="flex-1 flex justify-center">
             <div className="flex items-center gap-2">
-              <img src={tonLogo} alt="Stone by ton" className="h-8 w-8 rounded-md object-contain" />
-              <span className="text-white text-sm font-bold">Stone by ton</span>
+              <img src={JOHN_DEERE_LOGO} alt="John Deere" className="h-8 w-8 rounded-md object-contain" />
+              <span className="text-white text-sm font-bold">John Deere</span>
             </div>
           </div>
           <div className="w-9" />
@@ -127,7 +127,7 @@ export default function TasksPage() {
       <div className="mx-4 -mt-10 z-10 relative">
         <div className="bg-white rounded-2xl shadow-lg p-4 flex items-center justify-between">
           <div className="flex-1 text-center border-r border-gray-100">
-            <p className="text-[#FF4500] text-xl font-bold" data-testid="text-total-rewards">
+            <p className="text-[#367c2b] text-xl font-bold" data-testid="text-total-rewards">
               {totalTaskRewards.toLocaleString()}
             </p>
             <p className="text-gray-500 text-[11px] mt-0.5">{currency} gagnés</p>
@@ -246,7 +246,7 @@ export default function TasksPage() {
                         <button
                           onClick={() => !claimMutation.isPending && claimMutation.mutate(task.id)}
                           disabled={claimMutation.isPending}
-                          className="bg-[#FF4500] text-white text-[11px] font-semibold px-3 py-1.5 rounded-full active:scale-95 transition-transform shadow-sm"
+                          className="bg-[#367c2b] text-white text-[11px] font-semibold px-3 py-1.5 rounded-full active:scale-95 transition-transform shadow-sm"
                           data-testid={`button-claim-${task.id}`}
                         >
                           {claimMutation.isPending ? (
@@ -268,7 +268,7 @@ export default function TasksPage() {
           </div>
         ) : (
           <div className="text-center py-10 flex flex-col items-center gap-2">
-            <img src={emptyIllustration} alt="Vide" className="w-40 h-40 object-contain opacity-90" />
+            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
             <p className="text-gray-500">Aucune tâche disponible</p>
           </div>
         )}

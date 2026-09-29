@@ -6,25 +6,11 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { formatCurrency, getCountryByCode } from "@/lib/countries";
 import { Loader2, AlertTriangle } from "lucide-react";
-import emptyIllustration from "@assets/illustration-8_1784762965573.png";
 import { useLocation } from "wouter";
 import type { Product } from "@shared/schema";
 
-import tonLogo  from "@assets/images_(25)_1787362424281.png";
 import serviceIcon from "@assets/20260311_214852_1773265973964.png";
-import productImg1 from "@assets/téléchargement_(16)_1784561452683.jpeg";
-import productImg2 from "@assets/téléchargement_(20)_1784561452229.jpeg";
-import productImg3 from "@assets/téléchargement_(19)_1784561452588.jpeg";
-import productImg4 from "@assets/images_(50)_1783210180466.jpeg";
-import productImg5 from "@assets/images_(41)_1783210181134.jpeg";
-import productImg6 from "@assets/images_(49)_1783210181155.jpeg";
-import productImg7 from "@assets/images_(40)_1783210181193.jpeg";
-import productImg8 from "@assets/images_(39)_1783210181215.jpeg";
-
-const PRODUCT_IMAGES = [
-  productImg1, productImg2, productImg3, productImg4,
-  productImg5, productImg6, productImg7, productImg8,
-];
+import { getJohnDeereProductImage, JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
 
 interface ProductWithOwnership extends Product {
   isOwned: boolean;
@@ -80,11 +66,11 @@ export default function InvestPage() {
       {/* ── Header ── */}
       <div
         className="flex items-center justify-between px-4 py-3 shadow-sm"
-        style={{ background: "linear-gradient(135deg, #FF4500 0%, #E03E00 100%)" }}
+        style={{ background: "linear-gradient(135deg, #367C2B 0%, #25591C 100%)" }}
       >
           <div className="flex items-center gap-2">
-            <img src={tonLogo} alt="Stone by ton" className="h-8 w-8 rounded-md object-contain" />
-            <span className="text-white text-sm font-bold">Stone by ton</span>
+            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="h-8 w-8 rounded-md object-contain" />
+            <span className="text-white text-sm font-bold">John Deere</span>
           </div>
         <button
           onClick={() => navigate("/service")}
@@ -102,7 +88,7 @@ export default function InvestPage() {
           className="px-5 py-2 rounded-full font-bold text-sm transition-all"
           style={{
             background: activeTab === "all"
-              ? "linear-gradient(135deg, #16a34a, #22c55e)"
+              ? "linear-gradient(135deg, #367c2b, #25591c)"
               : "linear-gradient(135deg, #bbf7d0, #86efac)",
             color: activeTab === "all" ? "#fff" : "#15803d",
           }}
@@ -114,7 +100,7 @@ export default function InvestPage() {
           className="px-5 py-2 rounded-full font-bold text-sm transition-all"
           style={{
             background: activeTab === "mine"
-              ? "linear-gradient(135deg, #16a34a, #22c55e)"
+              ? "linear-gradient(135deg, #367c2b, #25591c)"
               : "linear-gradient(135deg, #bbf7d0, #86efac)",
             color: activeTab === "mine" ? "#fff" : "#15803d",
           }}
@@ -129,7 +115,7 @@ export default function InvestPage() {
           Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-2xl" />)
         ) : displayed.length > 0 ? (
           displayed.map((product, idx) => {
-            const img = PRODUCT_IMAGES[idx % PRODUCT_IMAGES.length];
+            const img = getJohnDeereProductImage(product.imageUrl, idx);
             return (
               <div
                 key={product.id}
@@ -154,7 +140,7 @@ export default function InvestPage() {
                     <button
                       onClick={() => setConfirmProduct(product)}
                       className="shrink-0 px-4 py-1.5 rounded-full text-white text-sm font-bold shadow"
-                      style={{ background: "linear-gradient(135deg, #16a34a, #22c55e)" }}
+                      style={{ background: "linear-gradient(135deg, #367c2b, #25591c)" }}
                       data-testid={`button-purchase-${product.id}`}
                     >
                       Acheter
@@ -181,7 +167,7 @@ export default function InvestPage() {
           })
         ) : (
           <div className="text-center py-8 flex flex-col items-center gap-2">
-            <img src={emptyIllustration} alt="Vide" className="w-40 h-40 object-contain opacity-90" />
+            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
             <p className="text-gray-400 text-sm">
               {activeTab === "mine" ? "Vous n'avez aucun produit actif" : "Aucun produit disponible"}
             </p>
@@ -192,9 +178,9 @@ export default function InvestPage() {
       {/* ── Purchase confirm modal ── */}
       {confirmProduct && (() => {
         const prodIdx   = (products?.findIndex(p => p.id === confirmProduct.id) ?? 0);
-        const prodImg   = PRODUCT_IMAGES[prodIdx % PRODUCT_IMAGES.length];
+        const prodImg   = getJohnDeereProductImage(confirmProduct.imageUrl, prodIdx);
         const shortage  = confirmProduct.price - balance;
-        const daily     = Number(confirmProduct.dailyIncome  || 0);
+        const daily     = Number(confirmProduct.dailyEarnings || 0);
         const total     = Number(confirmProduct.totalReturn  || daily * Number(confirmProduct.cycleDays || 90));
         const duration  = Number(confirmProduct.cycleDays || 90);
 
@@ -205,7 +191,7 @@ export default function InvestPage() {
           >
             <div
               className="w-full max-w-xs rounded-3xl overflow-hidden shadow-2xl"
-              style={{ background: "linear-gradient(160deg, #FF4500 0%, #E03E00 100%)" }}
+              style={{ background: "linear-gradient(160deg, #367c2b 0%, #25591c 100%)" }}
               onClick={e => e.stopPropagation()}
             >
               {/* ── Title block ── */}

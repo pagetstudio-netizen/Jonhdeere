@@ -1,4 +1,4 @@
-import emptyIllustration from "@assets/illustration-8_1784762965573.png";
+import { JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
@@ -57,7 +57,7 @@ export default function WithdrawalHistoryPage() {
           ))
         ) : withdrawals.length === 0 ? (
           <div className="text-center py-10 flex flex-col items-center gap-3">
-            <img src={emptyIllustration} alt="Aucun retrait" className="w-40 h-40 object-contain opacity-90" />
+            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
             <p className="text-gray-400 text-sm">Aucun retrait pour le moment</p>
           </div>
         ) : (
@@ -66,7 +66,7 @@ export default function WithdrawalHistoryPage() {
             return (
               <div key={w.id} className="bg-white rounded-2xl overflow-hidden shadow-sm">
                 {/* Red top bar */}
-                <div className="h-3 rounded-t-2xl" style={{ backgroundColor: "#3174d1" }} />
+                <div className="h-3 rounded-t-2xl" style={{ backgroundColor: "#367c2b" }} />
 
                 <div className="px-5 py-4 space-y-3">
                   <div className="flex items-center justify-between">

@@ -2,14 +2,10 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import emptyIllustration from "@assets/illustration-8_1784762965573.png";
-
-import elfExpert1 from "@assets/images_(56)_1786844134596.jpeg";
-import elfExpert2 from "@assets/images_(57)_1786844134447.jpeg";
-import elfStation1 from "@assets/images_(55)_1786844134544.jpeg";
-import elfStation2 from "@assets/images_(54)_1786844134570.jpeg";
-
-const productImages = [elfExpert1, elfExpert2, elfStation1, elfStation2];
+import {
+  getJohnDeereProductImage,
+  JOHN_DEERE_LOGO,
+} from "@/lib/john-deere-assets";
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -21,9 +17,8 @@ export default function OrdersPage() {
 
   if (!user) return null;
 
-  const getProductImage = (index: number) => {
-    return productImages[index % productImages.length];
-  };
+  const getProductImage = (imageUrl: string | null | undefined, index: number) =>
+    getJohnDeereProductImage(imageUrl, index);
 
   const filteredProducts = userProducts?.filter((up: any) => 
     activeTab === "active" ? up.status === "active" : up.status !== "active"
@@ -96,7 +91,7 @@ export default function OrdersPage() {
                   <div className="flex items-start gap-4">
                     <div className="w-24 h-24 flex-shrink-0">
                       <img 
-                        src={getProductImage(up.productId ? up.productId % productImages.length : index)} 
+                        src={getProductImage(up.product?.imageUrl, up.productId ? up.productId : index)}
                         alt={up.product?.name || "Produit"}
                         className="w-full h-full object-cover rounded-lg"
                       />
@@ -144,7 +139,7 @@ export default function OrdersPage() {
           </div>
         ) : (
           <div className="text-center py-10 flex flex-col items-center gap-2">
-            <img src={emptyIllustration} alt="Vide" className="w-40 h-40 object-contain opacity-90" />
+            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
             <p className="text-gray-500 font-medium">Aucun contenu pour le moment !</p>
           </div>
         )}

@@ -4,13 +4,15 @@ import { useToast } from "@/hooks/use-toast";
 import { getCountryByCode } from "@/lib/countries";
 import { useLocation } from "wouter";
 import { Copy } from "lucide-react";
-import teamReference from "@assets/images_(69)_1787362692968.jpeg";
-import earningsReference from "@assets/IMG-20260821-WA0159_1787357447412.jpg";
-import teamLogo from "@assets/images_(25)_1787362692989.png";
+import { JOHN_DEERE_LOGO, JOHN_DEERE_PHOTOS } from "@/lib/john-deere-assets";
 import instagramIcon from "@assets/Instagram_icon_1787367952152.png";
 import facebookIcon from "@assets/images_(27)_1787367952249.png";
 import whatsappIcon from "@assets/images_(26)_1787367952281.png";
 import telegramIcon from "@assets/tg-1_1787367952311.png";
+
+const teamReference = JOHN_DEERE_PHOTOS.teamMachinery;
+const earningsReference = JOHN_DEERE_PHOTOS.fieldTeam;
+const teamLogo = JOHN_DEERE_LOGO;
 
 interface TeamStats {
   level1Count: number;
@@ -84,10 +86,10 @@ export default function TeamPage() {
         .team-reference .team-screen { width: 100%; max-width: 500px; margin: 0 auto; overflow: hidden; }
         .team-reference .team-title { display: flex; height: 89px; align-items: center; justify-content: space-between; padding: 10px 26px 0 34px; border-bottom: 1px solid #eee; font-size: 35px; font-weight: 400; line-height: 1; }
         .team-reference .team-title img { width: 54px; height: 54px; object-fit: contain; }
-        .team-reference .invite-card { margin: 0 16px; overflow: hidden; border-radius: 20px; background: #60402d; }
+        .team-reference .invite-card { margin: 0 16px; overflow: hidden; border-radius: 20px; background: #25591c; }
         .team-reference .invite-art { height: min(54vw, 270px); overflow: hidden; }
         .team-reference .invite-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center center; pointer-events: none; }
-        .team-reference .invite-info { display: grid; grid-template-columns: 1fr 1.12fr; min-height: 168px; gap: 25px; padding: 12px 14px 18px; color: white; background: rgba(78,48,31,.91); }
+        .team-reference .invite-info { display: grid; grid-template-columns: 1fr 1.12fr; min-height: 168px; gap: 25px; padding: 12px 14px 18px; color: white; background: rgba(37,89,28,.91); }
         .team-reference .invite-label { margin-bottom: 15px; font-size: 13px; line-height: 1; }
         .team-reference .invite-code { font-size: 30px; font-weight: 800; letter-spacing: -.5px; line-height: 1; }
         .team-reference .invite-link { display: -webkit-box; overflow: hidden; font-size: 17px; font-weight: 700; line-height: 1.65; -webkit-box-orient: vertical; -webkit-line-clamp: 2; word-break: break-all; }
@@ -102,12 +104,12 @@ export default function TeamPage() {
         .team-reference .share-item { display: grid; width: 58px; height: 58px; place-items: center; overflow: hidden; border: 0; border-radius: 14px; background: transparent; font-weight: 800; }
         .team-reference .share-item img { display: block; width: 100%; height: 100%; object-fit: cover; }
         .team-reference .levels { padding: 25px 7px 0; }
-        .team-reference .level-card { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); height: 106px; margin-bottom: 6px; padding-top: 40px; overflow: visible; border-radius: 20px; background: linear-gradient(110deg, #9fdcf2 0%, #9bcdf5 44%, #b187ed 100%); box-shadow: inset 0 0 18px rgba(255,255,255,.3); }
-        .team-reference .level-badge { position: absolute; top: -1px; left: 50%; display: flex; width: 80px; height: 34px; align-items: center; justify-content: center; border-radius: 0 0 9px 9px; background: linear-gradient(135deg, #fff1ba, #ffe08a); color: #265b9d; font-size: 19px; font-weight: 800; transform: translateX(-50%); }
-        .team-reference .level-stat { color: white; text-align: center; text-shadow: 0 1px 2px rgba(27,76,151,.3); }
+        .team-reference .level-card { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); height: 106px; margin-bottom: 6px; padding-top: 40px; overflow: visible; border-radius: 20px; background: linear-gradient(110deg, #367c2b 0%, #25591c 100%); box-shadow: inset 0 0 18px rgba(255,255,255,.3); }
+        .team-reference .level-badge { position: absolute; top: -1px; left: 50%; display: flex; width: 80px; height: 34px; align-items: center; justify-content: center; border-radius: 0 0 9px 9px; background: linear-gradient(135deg, #fff6bf, #ffde00); color: #25591c; font-size: 19px; font-weight: 800; transform: translateX(-50%); }
+        .team-reference .level-stat { color: white; text-align: center; text-shadow: 0 1px 2px rgba(37,89,28,.3); }
         .team-reference .level-number { font-size: 20px; font-weight: 800; line-height: 1; }
         .team-reference .level-caption { margin-top: 8px; font-size: 12px; font-weight: 700; line-height: 1; }
-        .team-reference .earnings { position: relative; height: 169px; margin: 20px 16px 0; overflow: hidden; border-radius: 19px; background-color: #315bed; background-image: linear-gradient(90deg, rgba(48,83,236,.96) 0%, rgba(55,82,235,.94) 54%, rgba(48,80,236,.07) 74%), url("${earningsReference}"); background-repeat: no-repeat; background-size: auto, 461px auto; background-position: 0 0, center -460px; }
+        .team-reference .earnings { position: relative; height: 169px; margin: 20px 16px 0; overflow: hidden; border-radius: 19px; background-color: #367c2b; background-image: linear-gradient(90deg, rgba(54,124,43,.96) 0%, rgba(37,89,28,.94) 54%, rgba(54,124,43,.07) 74%), url("${earningsReference}"); background-repeat: no-repeat; background-size: auto, 461px auto; background-position: 0 0, center -460px; }
         .team-reference .earnings-content { position: relative; z-index: 1; padding: 2px 19px; color: white; }
         .team-reference .earnings-title { font-size: 19px; font-weight: 400; }
         .team-reference .earnings-value { margin-top: 10px; font-size: 32px; font-weight: 400; line-height: 1; }
@@ -129,7 +131,7 @@ export default function TeamPage() {
       <div className="team-screen">
           <h1 className="team-title">
             <span>Équipe</span>
-            <img src={teamLogo} alt="Stone by ton" />
+            <img src={teamLogo} alt="John Deere" />
           </h1>
 
         <section className="invite-card" aria-label="Invitation">

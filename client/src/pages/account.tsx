@@ -13,8 +13,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ADMIN_PATH } from "@/lib/admin-path";
-import accountBackground from "@assets/images_(72)_1787363798761.jpeg";
-import tonLogo from "@assets/images_(25)_1787363798796.png";
+import { JOHN_DEERE_LOGO, JOHN_DEERE_PHOTOS } from "@/lib/john-deere-assets";
 import rechargeIcon from "@assets/6_1787388071510.png";
 import withdrawalIcon from "@assets/mine-mod-bankcard-CLOhqwHj_1787388454905.png";
 import historyIcon from "@assets/4-1_1787388071574.png";
@@ -27,7 +26,9 @@ import passwordIcon from "@assets/20260822_002632_1787387728169.png";
 import rulesIcon from "@assets/20260822_002803_1787387728051.png";
 import logoutIcon from "@assets/logout_1787368185297.png";
 
-const tonGreen = "#00CC2C";
+const accountBackground = JOHN_DEERE_PHOTOS.dealership;
+const tonLogo = JOHN_DEERE_LOGO;
+const tonGreen = "#367C2B";
 
 export default function AccountPage() {
   const { user, logout } = useAuth();
@@ -165,7 +166,7 @@ export default function AccountPage() {
           overflow: hidden;
           border-radius: 14px;
           padding: 0 24px;
-          background: linear-gradient(110deg, #00cc2c 0%, #008f24 100%);
+          background: linear-gradient(110deg, #367c2b 0%, #25591c 100%);
         }
         .account-reference .summary-amount {
            min-width: 0;

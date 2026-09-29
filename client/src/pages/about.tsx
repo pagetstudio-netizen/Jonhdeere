@@ -19,19 +19,25 @@ export default function AboutPage() {
       <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5" style={{ color: "#d4d4d4", fontSize: 13.5, lineHeight: "1.75" }}>
 
         <p>
-          Stone by ton est une entreprise française fondée en 2013, spécialisée dans la vente en ligne et physique de pierre naturelle, de travertin, de carrelage et de parements muraux. Basée à Six-Fours-les-Plages dans le Var, la marque propose une large gamme de revêtements pour les sols et les murs intérieurs ou extérieurs.
+          John Deere est un fabricant mondial d’équipements agricoles et un producteur majeur de machines de construction et d’entretien des espaces verts.
         </p>
 
+        <h2 className="text-base font-semibold text-white">Origines et histoire</h2>
         <p>
-          Stone by ton accompagne les particuliers et les professionnels dans leurs projets d’aménagement, avec des matériaux sélectionnés pour leur qualité, leur caractère et leur durabilité.
+          L’entreprise a été fondée en 1837 à Grand Detour, dans l’Illinois, par le forgeron et innovateur John Deere (1804–1886). Il y a mis au point une charrue en acier autonettoyante, conçue pour labourer les sols collants des grandes plaines américaines. Le siège social de l’entreprise se trouve à Moline, dans l’Illinois, aux États-Unis.
         </p>
 
+        <h2 className="text-base font-semibold text-white">Domaines d’activité</h2>
         <p>
-          Notre collection s’adapte aux espaces intérieurs comme extérieurs : sols, murs, terrasses, salles de bains et pièces de vie.
+          En agriculture et pour les espaces verts, John Deere propose notamment des tracteurs des séries 6M et 6R, des moissonneuses-batteuses, des semoirs de précision et des équipements de fenaison.
+        </p>
+        <p>
+          Dans la construction et les travaux routiers, la gamme comprend des pelles et des chargeuses, ainsi que des solutions pour les chantiers routiers via des filiales spécialisées comme le groupe Wirtgen.
         </p>
 
+        <h2 className="text-base font-semibold text-white">Agriculture de précision</h2>
         <p>
-          La qualité des produits, le conseil et la satisfaction des clients sont au cœur de l’engagement de Stone by ton.
+          Le John Deere Operations Center est une plateforme numérique gratuite qui permet de connecter et de gérer à distance les données agronomiques et les performances des machines.
         </p>
 
       </div>

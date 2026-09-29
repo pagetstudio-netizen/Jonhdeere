@@ -3,6 +3,19 @@ import { users, products, tasks, paymentChannels, platformSettings, countries, s
 import bcrypt from "bcrypt";
 import { eq, sql } from "drizzle-orm";
 
+const JOHN_DEERE_PRODUCT_IMAGE_PATHS = [
+  "/john-deere/products/4066r-tractor.webp",
+  "/john-deere/products/harvesting-equipment.webp",
+  "/john-deere/products/camp-mowers.webp",
+  "/john-deere/products/fm40-mower.webp",
+  "/john-deere/products/gm20-mower.webp",
+  "/john-deere/products/fm41-mower.webp",
+  "/john-deere/products/r4d-tractor.webp",
+  "/john-deere/products/precision-seeder.webp",
+  "/john-deere/products/utility-tractor.webp",
+  "/john-deere/products/x350-mower.webp",
+];
+
 export async function seed() {
   console.log("Seeding database...");
 
@@ -175,6 +188,27 @@ export async function seed() {
     console.log(`Products skipped — ${existingProducts.length} existing products preserved`);
   }
 
+  // Replace the legacy catalog artwork once, without overwriting later admin edits.
+  const imageMigrationKey = "johnDeereProductImagesV1";
+  const imageMigration = await db.select({ key: platformSettings.key })
+    .from(platformSettings)
+    .where(eq(platformSettings.key, imageMigrationKey))
+    .limit(1);
+  if (imageMigration.length === 0) {
+    const productsToUpdate = await db.select().from(products);
+    const orderedProducts = productsToUpdate.sort(
+      (a, b) => a.sortOrder - b.sortOrder || a.id - b.id,
+    );
+    for (let index = 0; index < orderedProducts.length; index += 1) {
+      const product = orderedProducts[index];
+      if (!product) continue;
+      const imageUrl = JOHN_DEERE_PRODUCT_IMAGE_PATHS[index % JOHN_DEERE_PRODUCT_IMAGE_PATHS.length];
+      await db.update(products).set({ imageUrl }).where(eq(products.id, product.id));
+    }
+    await db.insert(platformSettings).values({ key: imageMigrationKey, value: "1" });
+    console.log(`John Deere product images applied to ${orderedProducts.length} products`);
+  }
+
   // Seed tasks only if table is empty (first install only — never overwrite admin changes)
   const existingTasks = await db.select().from(tasks);
   if (existingTasks.length === 0) {
@@ -217,7 +251,7 @@ export async function seed() {
     { key: "groupType", value: "telegram" },
     { key: "groupLabel", value: "Groupe de discussion" },
     { key: "popupButtonLabel", value: "Cliquez ici pour rejoindre le groupe Telegram" },
-    { key: "noticeText", value: "Bienvenue sur Stone by ton ! Découvrez nos pierres naturelles, travertins, carrelages et parements muraux." },
+    { key: "noticeText", value: "Bienvenue chez John Deere ! Découvrez nos équipements agricoles, de construction et d’entretien des espaces verts." },
     { key: "supportEnabled", value: "true" },
     { key: "support2Enabled", value: "true" },
     { key: "channelEnabled", value: "true" },
@@ -262,7 +296,7 @@ export async function seed() {
       console.log(`Setting added: ${settingData.key}${isSensitive ? "" : ` = ${settingData.value}`}`);
     } else if (
       settingData.key === "noticeText" &&
-      /sybotx|disney|walt|pixar|marvel|star wars/i.test(existing.value)
+      /sybotx|zijin mining|disney|walt|pixar|marvel|star wars/i.test(existing.value)
     ) {
       await db.update(platformSettings)
         .set({ value: settingData.value })

@@ -1,4 +1,4 @@
-import emptyIllustration from "@assets/illustration-8_1784762965573.png";
+import { JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
@@ -69,7 +69,7 @@ export default function DepositHistoryRealPage() {
           </div>
         ) : deposits.length === 0 ? (
           <div className="text-center py-10 flex flex-col items-center gap-3">
-            <img src={emptyIllustration} alt="Aucun dépôt" className="w-40 h-40 object-contain opacity-90" />
+            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
             <p className="text-gray-500">Aucun depot effectue</p>
           </div>
         ) : (

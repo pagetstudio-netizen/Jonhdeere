@@ -1,10 +1,9 @@
-- [Stone by ton identity](vestas-platform.md) — Current brand name, company description, logo treatment, and dashboard visual boundary.
 - [WestPay Integration](westpay-integration.md) — Redirect-based deposit flow + HMAC webhook; per-country API keys for withdrawals; secrets only (never in code/DB).
 - [SendavaPay integration](sendavapay-integration.md) — Payin deposit flow: backend creates+initiates, user phone auto-used, OTP/redirect handled, webhook HMAC verified.
 - [Imported database setup](imported-database-setup.md) — Preserve an existing Replit session table when applying a first-run Drizzle schema.
 - [Plesk GitHub deployment](plesk-github-deployment.md) — Plesk pulls a committed dist build and starts dist/index.cjs relative to the application root.
 - [Login privacy](login-privacy.md) — Do not persist passwords or phone numbers in browser storage; privacy scans classify remembered phone numbers as sensitive.
-- [TON green theme](ton-green-theme.md) — Apply TON green branding outside the dashboard; keep the dashboard’s current visual identity unchanged.
+- [Brand theme isolation](brand-theme-isolation.md) — Apply John Deere branding to every route except `/robotpay`; preserve RobotPay’s original theme.
 - [InPay callback classification](inpay-callbacks.md) — InPay payin and payout callbacks can both include order_number; classify using the merchant reference prefix first.
 - [InPay IP whitelist](inpay-ip-whitelist.md) — InPay rejects API calls with errno 5 until the server's public egress IP is whitelisted.
 - [AshtechPay Burkina flow](ashtechpay-burkina.md) — BF uses exact operator names and requires the returned reference on OTP retries.

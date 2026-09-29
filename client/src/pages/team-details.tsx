@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { ChevronLeft, User } from "lucide-react";
-import emptyIllustration from "@assets/illustration-8_1784762965573.png";
+import { JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
 import { getCountryByCode } from "@/lib/countries";
@@ -42,7 +42,7 @@ function formatDate(dateStr: string): string {
   return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
 }
 
-const GREEN = "#00CC2C";
+const GREEN = "#367C2B";
 const GREEN_BG = "#e9f9ec";
 
 export default function TeamDetailsPage() {
@@ -158,7 +158,7 @@ export default function TeamDetailsPage() {
           ))
         ) : members.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm text-center py-10 px-6 flex flex-col items-center gap-2">
-            <img src={emptyIllustration} alt="Vide" className="w-40 h-40 object-contain opacity-90" />
+            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
             <p className="text-gray-500 text-sm font-medium">
               Aucun membre au niveau {activeLevel}
             </p>

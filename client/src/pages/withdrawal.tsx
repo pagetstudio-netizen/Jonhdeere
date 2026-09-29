@@ -196,7 +196,7 @@ export default function WithdrawalPage() {
           position: relative;
           width: 30px;
           height: 30px;
-          border: 2px solid #3174d1;
+          border: 2px solid #367c2b;
           border-radius: 4px;
           background: transparent;
         }
@@ -207,8 +207,8 @@ export default function WithdrawalPage() {
           width: 16px;
           height: 2px;
           content: "";
-          background: #3174d1;
-          box-shadow: 0 6px 0 #3174d1;
+          background: #367c2b;
+          box-shadow: 0 6px 0 #367c2b;
         }
         .withdraw-reference .history-icon::after {
           position: absolute;
@@ -216,10 +216,10 @@ export default function WithdrawalPage() {
           bottom: -7px;
           width: 11px;
           height: 11px;
-          border: 2px solid #3174d1;
+          border: 2px solid #367c2b;
           border-radius: 50%;
           content: "";
-          background: #ffcf3e;
+          background: #ffde00;
         }
         .withdraw-reference .hero-art {
           position: relative;
@@ -294,18 +294,18 @@ export default function WithdrawalPage() {
           width: 10px;
           height: 3px;
           border-radius: 3px;
-          background: #40b9cf;
+          background: #367c2b;
         }
         .withdraw-reference .receipt-icon::before {
           top: 8px;
-          box-shadow: 0 7px 0 #40b9cf;
+          box-shadow: 0 7px 0 #367c2b;
         }
         .withdraw-reference .receipt-icon::after {
           top: 20px;
           left: 12px;
           width: 6px;
           height: 6px;
-          border: 2px solid #40b9cf;
+          border: 2px solid #367c2b;
           border-radius: 50%;
           background: transparent;
         }
@@ -339,19 +339,19 @@ export default function WithdrawalPage() {
           overflow: hidden;
           border: 2px solid rgba(255,255,255,.88);
           border-radius: 10px;
-          background: linear-gradient(110deg, #ffd45d 0%, #ffe69a 100%);
+          background: linear-gradient(110deg, #ffde00 0%, #fff6bf 100%);
           box-shadow: 0 1px 2px rgba(202,151,0,.1);
         }
         .withdraw-reference .balance-label {
           margin: 29px 0 0 15px;
-          color: #eb7123;
+          color: #25591c;
           font-size: 23px;
           font-weight: 800;
           line-height: 1;
         }
         .withdraw-reference .balance-value {
           margin: 20px 0 0 15px;
-          color: #f36d17;
+          color: #25591c;
           font-size: 43px;
           font-weight: 800;
           line-height: .9;
@@ -456,7 +456,7 @@ export default function WithdrawalPage() {
           margin: 12px 16px 0;
           padding: 0 17px;
           border-radius: 5px;
-          background: linear-gradient(112deg, #00CC2C 0%, #009d22 100%);
+          background: linear-gradient(112deg, #367c2b 0%, #25591c 100%);
           color: white;
           text-align: left;
           box-shadow: 0 1px 2px rgba(214,153,0,.15);
@@ -504,7 +504,7 @@ export default function WithdrawalPage() {
           position: absolute;
           top: 2px;
           left: -19px;
-          color: #579ad8;
+          color: #367c2b;
           font-size: 9px;
         }
         .withdraw-reference .instruction strong { font-weight: 800; }
@@ -516,7 +516,7 @@ export default function WithdrawalPage() {
           justify-content: center;
           margin: 4px 24px 35px;
           border-radius: 29px;
-          background: linear-gradient(112deg, #00CC2C 0%, #009d22 100%);
+          background: linear-gradient(112deg, #367c2b 0%, #25591c 100%);
           color: white;
           font-size: 17px;
           font-weight: 600;

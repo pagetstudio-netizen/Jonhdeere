@@ -5,8 +5,10 @@ import { useToast } from "@/hooks/use-toast";
 import { getCountryByCode } from "@/lib/countries";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
-import checkinHero from "@assets/images_(72)_1787362692942.jpeg";
-import tonLogo from "@assets/images_(25)_1787362692989.png";
+import { JOHN_DEERE_LOGO, JOHN_DEERE_PHOTOS } from "@/lib/john-deere-assets";
+
+const checkinHero = JOHN_DEERE_PHOTOS.fieldTeam;
+const tonLogo = JOHN_DEERE_LOGO;
 
 interface BonusStatus {
   canClaim: boolean;
@@ -214,7 +216,7 @@ export default function CheckinPage() {
           justify-content: center;
           margin: 14px 48px 0;
           border-radius: 34px;
-          background: #3174d1;
+          background: #367c2b;
           color: white;
           font-size: 26px;
           font-weight: 400;

@@ -1,8 +1,8 @@
-# Stone by ton - Online Stone & Tile Platform
+# John Deere - Agricultural and Construction Equipment Platform
 
 ## Overview
 
-Stone by ton is a French company founded in 2013, based in Six-Fours-les-Plages in the Var. The platform presents a range of natural stone, travertine, tiles, and wall cladding for indoor and outdoor floors and walls.
+John Deere was founded in 1837 in Grand Detour, Illinois, and is a global manufacturer of agricultural equipment and a major producer of construction and turf-care machinery. Its products include tractors, combines, precision seeders, hay equipment, construction machinery, and precision-agriculture tools such as the John Deere Operations Center.
 
 ## User Preferences
 
