@@ -2,20 +2,20 @@ import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
-  ArrowDownToLine,
-  ArrowUpFromLine,
   ChevronRight,
-  CircleDollarSign,
   Loader2,
   LogOut,
   Shield,
-  WalletCards,
 } from "lucide-react";
 import aboutIcon from "@assets/info_(1)_1790682898817.png";
 import passwordIcon from "@assets/sign_in_1790682898843.png";
 import giftCodeIcon from "@assets/rewards_1790682898867.png";
 import supportIcon from "@assets/help_1790682898889.png";
 import historyIcon from "@assets/withdraw_record_(1)_1790682898914.png";
+import depositIcon from "@assets/a90f54732fab3ff150753cf117ce6a24_1790690575928.png";
+import withdrawalIcon from "@assets/fa6620bc07e2128cfd6a47b85bb73129_1790690575968.png";
+import bankAccountIcon from "@assets/a96d355bc25b348d27c903a0be9d6798_1790690576005.png";
+import balanceIcon from "@assets/téléchargement_(63)_1790690576065.png";
 import type { WithdrawalWallet } from "@shared/schema";
 import { useAuth } from "@/lib/auth";
 import { getCountryByCode } from "@/lib/countries";
@@ -128,7 +128,7 @@ export default function AccountPage() {
           <article className="account-balance-card">
             <div className="account-balance-main">
               <div className="account-balance-icon" aria-hidden="true">
-                <WalletCards />
+                <img src={balanceIcon} alt="" />
               </div>
               <div className="account-balance-copy">
                 <span>Solde</span>
@@ -164,13 +164,13 @@ export default function AccountPage() {
         <section className="account-shortcuts" aria-label="Opérations du compte">
           <button type="button" onClick={() => navigate("/deposit")}>
             <span className="account-shortcut-icon" aria-hidden="true">
-              <ArrowDownToLine />
+              <img src={depositIcon} alt="" />
             </span>
             Recharger
           </button>
           <button type="button" onClick={() => navigate("/withdrawal")}>
             <span className="account-shortcut-icon" aria-hidden="true">
-              <ArrowUpFromLine />
+              <img src={withdrawalIcon} alt="" />
             </span>
             Retirer
           </button>
@@ -183,7 +183,7 @@ export default function AccountPage() {
           aria-label="Gérer le compte bancaire"
         >
           <span className="account-wallet-icon" aria-hidden="true">
-            <CircleDollarSign />
+            <img src={bankAccountIcon} alt="" />
           </span>
           <span className="account-wallet-copy">
             <strong>Compte bancaire</strong>
