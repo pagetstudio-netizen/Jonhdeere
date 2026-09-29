@@ -4,14 +4,11 @@ import { useLocation } from "wouter";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
-  BookOpenText,
-  CalendarCheck2,
   ChevronRight,
   CircleDollarSign,
   Loader2,
   LogOut,
   Shield,
-  UsersRound,
   WalletCards,
 } from "lucide-react";
 import aboutIcon from "@assets/info_(1)_1790682898817.png";
@@ -98,11 +95,7 @@ export default function AccountPage() {
     { label: "Historique", image: historyIcon, onSelect: () => navigate("/history") },
     { label: "Code cadeau", image: giftCodeIcon, onSelect: () => navigate("/gift-code") },
     { label: "À propos", image: aboutIcon, onSelect: () => navigate("/about") },
-    { label: "Service client", image: supportIcon, onSelect: () => navigate("/service") },
-    { label: "Équipe", Icon: UsersRound, onSelect: () => navigate("/team") },
-    { label: "Règles", Icon: BookOpenText, onSelect: () => navigate("/rules") },
     { label: "Mot de passe", image: passwordIcon, onSelect: () => navigate("/change-password") },
-    { label: "Bonus quotidien", Icon: CalendarCheck2, onSelect: () => navigate("/checkin") },
     { label: "Déconnexion", Icon: LogOut, onSelect: () => void handleLogout() },
   ];
 
