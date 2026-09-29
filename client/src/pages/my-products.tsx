@@ -9,9 +9,9 @@ import type { Product } from "@shared/schema";
 
 import {
   getJohnDeereProductImage,
-  JOHN_DEERE_LOGO,
   JOHN_DEERE_PHOTOS,
 } from "@/lib/john-deere-assets";
+import EmptyState from "@/components/empty-state";
 
 const productsReference = JOHN_DEERE_PHOTOS.tractorExpo;
 
@@ -161,10 +161,9 @@ export default function MyProductsPage() {
                 <Loader2 className="w-8 h-8 animate-spin text-[#00CC2C]" />
               </div>
             ) : paidProducts.length === 0 ? (
-              <div className="empty">
-                <img src={JOHN_DEERE_LOGO} alt="John Deere" />
+               <EmptyState className="empty">
                 <p>Aucun produit disponible</p>
-              </div>
+               </EmptyState>
             ) : (
               paidProducts.map((product, idx) => {
                 const img = getJohnDeereProductImage(product.imageUrl, idx);
@@ -201,11 +200,10 @@ export default function MyProductsPage() {
                   <Loader2 className="w-8 h-8 animate-spin text-[#00CC2C]" />
                 </div>
               ) : allUserProducts.length === 0 ? (
-                <div className="empty">
-                  <img src={JOHN_DEERE_LOGO} alt="John Deere" />
+                 <EmptyState className="empty">
                   <p>Aucun produit John Deere</p>
                   <p className="text-sm text-gray-400">Achetez des produits pour commencer à gagner</p>
-                </div>
+                 </EmptyState>
               ) : (
                 allUserProducts.map((up: any, index: number) => {
                   const cycleDays = up.product?.cycleDays || 60;

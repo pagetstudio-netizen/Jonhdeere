@@ -8,9 +8,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getPaymentMethodsForCountry, type ApiCountry } from "@/lib/countries";
 import { Loader2, Plus, Trash2, CreditCard, ChevronLeft, ChevronRight, Shield, Check, Search, X } from "lucide-react";
-import { JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
 import { Link, useLocation, useSearch } from "wouter";
 import type { WithdrawalWallet } from "@shared/schema";
+import EmptyState from "@/components/empty-state";
 
 const walletSchema = z.object({
   accountName: z.string().min(2, "Nom du titulaire requis"),
@@ -262,7 +262,7 @@ export default function WalletPage() {
                   </button>
                 ))}
                 {paymentMethods.filter((method) => method.toLowerCase().includes(bankSearch.trim().toLowerCase())).length === 0 && (
-                  <p className="country-picker-empty">Aucun opérateur trouvé</p>
+                   <EmptyState size="compact" className="country-picker-empty">Aucun opérateur trouvé</EmptyState>
                 )}
               </div>
             </section>
@@ -366,11 +366,10 @@ export default function WalletPage() {
             </div>
           ))
         ) : (
-          <div className="text-center py-10 flex flex-col items-center gap-2">
-            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
+           <EmptyState className="text-center py-10 flex flex-col items-center gap-2">
             <p className="text-gray-500 text-sm">Aucun compte bancaire enregistré</p>
             <p className="text-gray-400 text-xs mt-1">Ajoutez un compte pour effectuer des retraits</p>
-          </div>
+           </EmptyState>
         )}
       </div>
 

@@ -7,6 +7,7 @@ import depositIcon from "@assets/6_1790677909266.png";
 import withdrawalIcon from "@assets/withdraw-icon-DFsum39V_(1)_1790692014343.png";
 import checkinIcon from "@assets/téléchargement_(13)_1790692014386.png";
 import serviceIcon from "@assets/2-2_1790677909350.png";
+import EmptyState from "@/components/empty-state";
 
 type HomeProduct = Product & {
   canClaimFree?: boolean;
@@ -450,7 +451,7 @@ export default function HomeDashboard() {
                 );
               })
             ) : (
-              <div className="product-empty">Aucun produit disponible pour le moment.</div>
+               <EmptyState className="product-empty">Aucun produit disponible pour le moment.</EmptyState>
             )}
           </section>
         </div>

@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/countries";
 import { ArrowDownToLine, ArrowUpFromLine, TrendingUp, Clock, Check, X } from "lucide-react";
 import type { Deposit, Withdrawal, Transaction } from "@shared/schema";
+import EmptyState from "@/components/empty-state";
 
 interface TransactionHistoryModalProps {
   open: boolean;
@@ -100,10 +101,9 @@ export default function TransactionHistoryModal({ open, onClose }: TransactionHi
                   </Card>
                 ))
               ) : (
-                <div className="text-center py-8">
-                  <ArrowDownToLine className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                 <EmptyState className="text-center py-8">
                   <p className="text-muted-foreground">Aucun dépôt</p>
-                </div>
+                 </EmptyState>
               )}
             </TabsContent>
 
@@ -135,10 +135,9 @@ export default function TransactionHistoryModal({ open, onClose }: TransactionHi
                   </Card>
                 ))
               ) : (
-                <div className="text-center py-8">
-                  <ArrowUpFromLine className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                 <EmptyState className="text-center py-8">
                   <p className="text-muted-foreground">Aucun retrait</p>
-                </div>
+                 </EmptyState>
               )}
             </TabsContent>
 
@@ -167,10 +166,9 @@ export default function TransactionHistoryModal({ open, onClose }: TransactionHi
                   </Card>
                 ))
               ) : (
-                <div className="text-center py-8">
-                  <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                 <EmptyState className="text-center py-8">
                   <p className="text-muted-foreground">Aucun revenu</p>
-                </div>
+                 </EmptyState>
               )}
             </TabsContent>
           </div>

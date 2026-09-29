@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Check, X, Search, Loader2, Send } from "lucide-react";
 import type { Withdrawal } from "@shared/schema";
+import EmptyState from "@/components/empty-state";
 
 interface WithdrawalWithUser extends Withdrawal {
   user: {
@@ -246,9 +247,9 @@ export default function AdminWithdrawals() {
             </Card>
           ))
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
+          <EmptyState className="py-8">
             Aucun retrait trouvé
-          </div>
+          </EmptyState>
         )}
       </div>
     </div>

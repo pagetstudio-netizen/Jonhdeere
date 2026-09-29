@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { ApiCountry } from "@/lib/countries";
 import { Check, Loader2, Search, X } from "lucide-react";
+import EmptyState from "@/components/empty-state";
 
 interface CountrySelectorProps {
   open: boolean;
@@ -71,7 +72,7 @@ export function CountrySelector({ open, onClose, onSelect, selectedCountryCode }
               </button>
             );
           })}
-          {!isLoading && !isError && countries.length === 0 && <p className="country-picker-empty">Aucun pays disponible</p>}
+           {!isLoading && !isError && countries.length === 0 && <EmptyState size="compact" className="country-picker-empty">Aucun pays disponible</EmptyState>}
         </div>
       </section>
     </div>

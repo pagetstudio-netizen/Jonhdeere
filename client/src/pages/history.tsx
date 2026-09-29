@@ -6,7 +6,7 @@ import { ChevronLeft, Loader2, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
-import { JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
+import EmptyState from "@/components/empty-state";
 
 interface Deposit {
   id: number;
@@ -490,10 +490,9 @@ export default function HistoryPage() {
                 })}
               </div>
             ) : (
-              <div className="history-empty">
-                <img src={JOHN_DEERE_LOGO} alt="John Deere" />
+               <EmptyState className="history-empty">
                 <span>Plus de données</span>
-              </div>
+               </EmptyState>
             )
           ) : activeTab === "deposits" ? (
             deposits.length > 0 ? (
@@ -530,10 +529,9 @@ export default function HistoryPage() {
                 })}
               </div>
             ) : (
-              <div className="history-empty">
-                <img src={JOHN_DEERE_LOGO} alt="John Deere" />
+               <EmptyState className="history-empty">
                 <span>Plus de données</span>
-              </div>
+               </EmptyState>
             )
           ) : withdrawals.length > 0 ? (
             <div className="history-list">
@@ -558,10 +556,9 @@ export default function HistoryPage() {
               })}
             </div>
           ) : (
-            <div className="history-empty">
-              <img src={JOHN_DEERE_LOGO} alt="John Deere" />
+             <EmptyState className="history-empty">
               <span>Plus de données</span>
-            </div>
+             </EmptyState>
           )}
         </section>
       </div>

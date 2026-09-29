@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus, Pencil, Trash2, Globe } from "lucide-react";
 import type { Country } from "@shared/schema";
+import EmptyState from "@/components/empty-state";
 
 interface CountryForm {
   code: string;
@@ -186,7 +187,7 @@ export default function AdminCountries() {
           );
         })}
         {countriesList?.length === 0 && (
-          <p className="text-muted-foreground text-sm text-center py-8">Aucun pays configuré</p>
+          <EmptyState className="py-8">Aucun pays configuré</EmptyState>
         )}
       </div>
 

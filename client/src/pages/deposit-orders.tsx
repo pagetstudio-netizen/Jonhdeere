@@ -1,10 +1,10 @@
-import { JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
 import { Link } from "wouter";
 import { getCountryByCode } from "@/lib/countries";
 import { Skeleton } from "@/components/ui/skeleton";
+import EmptyState from "@/components/empty-state";
 
 interface Deposit {
   id: number;
@@ -55,10 +55,9 @@ export default function DepositOrdersPage() {
             <Skeleton key={i} className="h-28 w-full rounded-2xl" />
           ))
         ) : deposits.length === 0 ? (
-          <div className="text-center py-10 flex flex-col items-center gap-3">
-            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
+           <EmptyState className="text-center py-10 flex flex-col items-center gap-3">
             <p className="text-gray-400 text-sm">Aucun dépôt pour le moment</p>
-          </div>
+           </EmptyState>
         ) : (
           deposits.map((d) => {
             const cfg = STATUS_CONFIG[d.status] || { label: d.status, bg: "bg-gray-500", text: "text-white" };

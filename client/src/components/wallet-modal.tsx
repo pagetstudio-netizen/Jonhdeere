@@ -15,6 +15,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { getPaymentMethodsForCountry } from "@/lib/countries";
 import { Loader2, Plus, Trash2, CreditCard, Check } from "lucide-react";
 import type { WithdrawalWallet } from "@shared/schema";
+import EmptyState from "@/components/empty-state";
 
 const walletSchema = z.object({
   accountName: z.string().min(2, "Nom du compte requis"),
@@ -168,10 +169,9 @@ export default function WalletModal({ open, onClose }: WalletModalProps) {
               </Card>
             ))
           ) : !showForm ? (
-            <div className="text-center py-8">
-              <CreditCard className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+             <EmptyState className="text-center py-8">
               <p className="text-muted-foreground mb-4">Aucun portefeuille enregistré</p>
-            </div>
+             </EmptyState>
           ) : null}
 
           {showForm ? (

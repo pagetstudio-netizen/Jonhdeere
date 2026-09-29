@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Loader2, Gift } from "lucide-react";
+import { Plus, Trash2, Loader2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import EmptyState from "@/components/empty-state";
 
 interface GiftCode {
   id: number;
@@ -171,9 +172,10 @@ export default function AdminGiftCodes() {
 
       {giftCodes.length === 0 ? (
         <Card data-testid="card-empty-state">
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <Gift className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          <CardContent className="py-12 text-muted-foreground">
+            <EmptyState>
             <p data-testid="text-empty-message">Aucun code cadeau</p>
+            </EmptyState>
           </CardContent>
         </Card>
       ) : (

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus, Edit, Trash2, Phone, Loader2, Eye, EyeOff, ExternalLink } from "lucide-react";
 import type { PaymentNumber } from "@shared/schema";
+import EmptyState from "@/components/empty-state";
 
 interface Country {
   id: number;
@@ -177,11 +178,10 @@ export default function AdminPaymentNumbers() {
       {isLoading ? (
         Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-20" />)
       ) : numbers.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <Phone className="w-12 h-12 mx-auto mb-3 opacity-30" />
+        <EmptyState className="py-12">
           <p>Aucun numéro configuré</p>
           <p className="text-xs mt-1">Ajoutez des numéros pour que les utilisateurs puissent déposer</p>
-        </div>
+        </EmptyState>
       ) : (
         Object.entries(grouped).map(([country, nums]) => (
           <div key={country}>

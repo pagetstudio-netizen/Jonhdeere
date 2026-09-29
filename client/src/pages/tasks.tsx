@@ -8,6 +8,7 @@ import { ChevronLeft, Loader2, Trophy, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
 import type { Task } from "@shared/schema";
 import { JOHN_DEERE_LOGO, JOHN_DEERE_PHOTOS } from "@/lib/john-deere-assets";
+import EmptyState from "@/components/empty-state";
 import iconBronze from "@assets/344464_1773318022355.png";
 import iconArgent from "@assets/817729_1773318022328.png";
 import iconOr from "@assets/sac-argent-gros-tas-illustration-icone-argent-comptant-icone-p_1773318022388.jpg";
@@ -267,10 +268,9 @@ export default function TasksPage() {
             })}
           </div>
         ) : (
-          <div className="text-center py-10 flex flex-col items-center gap-2">
-            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
+           <EmptyState className="text-center py-10 flex flex-col items-center gap-2">
             <p className="text-gray-500">Aucune tâche disponible</p>
-          </div>
+           </EmptyState>
         )}
       </div>
     </div>

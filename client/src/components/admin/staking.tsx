@@ -9,8 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Edit, Trash2, Loader2, Lock, Users, Calendar, TrendingUp, Eye, EyeOff, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, Users, Calendar, TrendingUp, Eye, EyeOff, Package } from "lucide-react";
 import type { StakingProduct, UserStaking } from "@shared/schema";
+import EmptyState from "@/components/empty-state";
 
 type UserStakingFull = UserStaking & { product: StakingProduct; user: { id: number; fullName: string; phone: string; country: string } };
 
@@ -150,10 +151,9 @@ export default function AdminStaking() {
           {productsLoading ? (
             Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-32" />)
           ) : products.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Lock className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <EmptyState className="py-12">
               <p>Aucun produit staking créé</p>
-            </div>
+            </EmptyState>
           ) : (
             <div className="space-y-3">
               {products.map(sp => {
@@ -234,7 +234,7 @@ export default function AdminStaking() {
           {stakingsLoading ? (
             Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-24" />)
           ) : stakings.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Aucun achat staking</div>
+            <EmptyState className="py-8">Aucun achat staking</EmptyState>
           ) : (
             <div className="space-y-2">
               {stakings.map(s => (

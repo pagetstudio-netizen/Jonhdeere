@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Edit, Loader2, TrendingUp, Plus, Trash2 } from "lucide-react";
 import type { Product } from "@shared/schema";
+import EmptyState from "@/components/empty-state";
 
 const productSchema = z.object({
   name: z.string().min(2, "Nom requis"),
@@ -282,9 +283,9 @@ export default function AdminProducts() {
           </Card>
         ))
       ) : (
-        <div className="text-center py-8 text-muted-foreground">
+        <EmptyState className="py-8">
           Aucun produit
-        </div>
+        </EmptyState>
       )}
 
       {/* Create Dialog */}

@@ -11,6 +11,7 @@ import type { Product } from "@shared/schema";
 
 import serviceIcon from "@assets/20260311_214852_1773265973964.png";
 import { getJohnDeereProductImage, JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
+import EmptyState from "@/components/empty-state";
 
 interface ProductWithOwnership extends Product {
   isOwned: boolean;
@@ -166,12 +167,11 @@ export default function InvestPage() {
             );
           })
         ) : (
-          <div className="text-center py-8 flex flex-col items-center gap-2">
-            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
+           <EmptyState className="text-center py-8 flex flex-col items-center gap-2">
             <p className="text-gray-400 text-sm">
               {activeTab === "mine" ? "Vous n'avez aucun produit actif" : "Aucun produit disponible"}
             </p>
-          </div>
+           </EmptyState>
         )}
       </div>
 

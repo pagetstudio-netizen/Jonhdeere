@@ -15,6 +15,7 @@ import { formatCurrency } from "@/lib/countries";
 import { Search, Edit, Ban, Shield, Lock, Unlock, Star, Users, Loader2, UserPlus, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, Landmark } from "lucide-react";
 import type { User, Product } from "@shared/schema";
 import { ADMIN_PATH } from "@/lib/admin-path";
+import EmptyState from "@/components/empty-state";
 
 interface UserProductItem {
   id: number;
@@ -325,9 +326,9 @@ export default function AdminUsers({ isSuperAdmin }: AdminUsersProps) {
             </Card>
           ))
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
+          <EmptyState className="py-8" size="default">
             Aucun utilisateur trouve
-          </div>
+          </EmptyState>
         )}
       </div>
 
@@ -397,7 +398,7 @@ export default function AdminUsers({ isSuperAdmin }: AdminUsersProps) {
                     <TeamMemberCard key={member.id} member={member} level={1} />
                   ))
                 ) : (
-                  <p className="text-center text-muted-foreground py-4">Aucun filleul niveau 1</p>
+                  <EmptyState size="compact" className="py-4">Aucun filleul niveau 1</EmptyState>
                 )}
               </TabsContent>
 
@@ -415,7 +416,7 @@ export default function AdminUsers({ isSuperAdmin }: AdminUsersProps) {
                     <TeamMemberCard key={member.id} member={member} level={2} />
                   ))
                 ) : (
-                  <p className="text-center text-muted-foreground py-4">Aucun filleul niveau 2</p>
+                  <EmptyState size="compact" className="py-4">Aucun filleul niveau 2</EmptyState>
                 )}
               </TabsContent>
 
@@ -433,7 +434,7 @@ export default function AdminUsers({ isSuperAdmin }: AdminUsersProps) {
                     <TeamMemberCard key={member.id} member={member} level={3} />
                   ))
                 ) : (
-                  <p className="text-center text-muted-foreground py-4">Aucun filleul niveau 3</p>
+                  <EmptyState size="compact" className="py-4">Aucun filleul niveau 3</EmptyState>
                 )}
               </TabsContent>
             </Tabs>
@@ -566,7 +567,7 @@ export default function AdminUsers({ isSuperAdmin }: AdminUsersProps) {
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-muted-foreground">Aucun produit</p>
+                      <EmptyState size="compact">Aucun produit</EmptyState>
                     )}
                   </div>
                 </div>

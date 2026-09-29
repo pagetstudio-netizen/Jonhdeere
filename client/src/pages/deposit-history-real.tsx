@@ -1,10 +1,10 @@
-import { JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
 import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { getCountryByCode } from "@/lib/countries";
 import { Skeleton } from "@/components/ui/skeleton";
+import EmptyState from "@/components/empty-state";
 
 interface Deposit {
   id: number;
@@ -68,10 +68,9 @@ export default function DepositHistoryRealPage() {
             ))}
           </div>
         ) : deposits.length === 0 ? (
-          <div className="text-center py-10 flex flex-col items-center gap-3">
-            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
+           <EmptyState className="text-center py-10 flex flex-col items-center gap-3">
             <p className="text-gray-500">Aucun depot effectue</p>
-          </div>
+           </EmptyState>
         ) : (
           deposits.map((deposit) => {
             const date = new Date(deposit.createdAt);

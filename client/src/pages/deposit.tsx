@@ -13,6 +13,7 @@ import type { PaymentNumber } from "@shared/schema";
 import historyIcon from "@assets/20260410_193219_1787363717022.png";
 import depositBrandMark from "@assets/téléchargement_-_2026-09-29T140846.267_1790693223891.png";
 import bankCardIcon from "@assets/bankCard-CnRlNHo8_(1)_1790705182033.png";
+import EmptyState from "@/components/empty-state";
 
 const TON_GREEN = "#367C2B";
 const TON_GREEN_DARK = "#25591C";
@@ -1191,7 +1192,7 @@ export default function DepositPage() {
         </div>
         <div>
           <p className="text-sm font-semibold text-gray-800 mb-2">Opérateur Mobile Money</p>
-          {ashtechOperators.length === 0 ? <p className="text-sm text-gray-400 text-center py-5">Aucun opérateur disponible pour ce pays</p> : (
+          {ashtechOperators.length === 0 ? <EmptyState size="compact" className="text-sm text-gray-400 text-center py-5">Aucun opérateur disponible pour ce pays</EmptyState> : (
             <div className="space-y-2">
               {ashtechOperators.map((operator, index) => {
                 const name = typeof operator === "string" ? operator : (operator.name || operator.code || `Opérateur ${index + 1}`);
@@ -1331,7 +1332,7 @@ export default function DepositPage() {
             </div>
           ) : svOperators.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
-              <p className="text-sm">Aucun opérateur disponible pour ce pays</p>
+              <EmptyState size="compact" className="text-sm">Aucun opérateur disponible pour ce pays</EmptyState>
             </div>
           ) : (
             <div className="space-y-2">

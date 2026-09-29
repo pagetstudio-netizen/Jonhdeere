@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { ChevronLeft, User } from "lucide-react";
-import { JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
 import { getCountryByCode } from "@/lib/countries";
+import EmptyState from "@/components/empty-state";
 
 interface TeamMember {
   id: number;
@@ -160,15 +160,14 @@ export default function TeamDetailsPage() {
             <Skeleton key={i} className="h-16 w-full rounded-2xl" />
           ))
         ) : members.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm text-center py-10 px-6 flex flex-col items-center gap-2">
-            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
+           <EmptyState className="bg-white rounded-2xl shadow-sm text-center py-10 px-6 flex flex-col items-center gap-2">
             <p className="text-gray-500 text-sm font-medium">
               Aucun membre au niveau {activeLevel}
             </p>
             <p className="text-gray-400 text-xs mt-1">
               Invitez des amis pour agrandir votre équipe
             </p>
-          </div>
+           </EmptyState>
         ) : (
           members.map((member) => (
             <div

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Users, TrendingUp } from "lucide-react";
 import type { User } from "@shared/schema";
 import { ADMIN_PATH } from "@/lib/admin-path";
+import EmptyState from "@/components/empty-state";
 
 interface TeamMember {
   id: number;
@@ -112,9 +113,9 @@ export default function AdminTeamPage() {
         )}
 
         {member.products.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-2">
+          <EmptyState size="compact" className="py-2">
             Aucun produit acheté
-          </p>
+          </EmptyState>
         )}
       </CardContent>
     </Card>
@@ -216,8 +217,10 @@ export default function AdminTeamPage() {
                   ))
                 ) : (
                   <Card>
-                    <CardContent className="p-8 text-center text-muted-foreground">
+                    <CardContent className="p-8 text-muted-foreground">
+                      <EmptyState>
                       Aucun filleul niveau 1
+                      </EmptyState>
                     </CardContent>
                   </Card>
                 )}
@@ -235,8 +238,10 @@ export default function AdminTeamPage() {
                   ))
                 ) : (
                   <Card>
-                    <CardContent className="p-8 text-center text-muted-foreground">
+                    <CardContent className="p-8 text-muted-foreground">
+                      <EmptyState>
                       Aucun filleul niveau 2
+                      </EmptyState>
                     </CardContent>
                   </Card>
                 )}
@@ -254,8 +259,10 @@ export default function AdminTeamPage() {
                   ))
                 ) : (
                   <Card>
-                    <CardContent className="p-8 text-center text-muted-foreground">
+                    <CardContent className="p-8 text-muted-foreground">
+                      <EmptyState>
                       Aucun filleul niveau 3
+                      </EmptyState>
                     </CardContent>
                   </Card>
                 )}

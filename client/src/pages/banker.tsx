@@ -11,6 +11,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { Search, Check, X, LogOut, Loader2, ArrowDownCircle, ArrowUpCircle, History, RefreshCw } from "lucide-react";
 import type { Deposit, Withdrawal } from "@shared/schema";
+import EmptyState from "@/components/empty-state";
 
 interface DepositWithUser extends Deposit {
   user: { id: number; fullName: string; phone: string; country: string; isPromoter: boolean };
@@ -254,7 +255,7 @@ export default function BankerPage() {
             ) : (
               <div className="space-y-3">
                 {filterDeposits(allDeposits || []).length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">Aucun dépôt trouvé</div>
+                  <EmptyState className="py-8">Aucun dépôt trouvé</EmptyState>
                 ) : filterDeposits(allDeposits || []).map(deposit => (
                   <Card key={deposit.id} className={deposit.status === "pending" ? "border-yellow-500/30" : ""}>
                     <CardContent className="p-4">
@@ -348,7 +349,7 @@ export default function BankerPage() {
             ) : (
               <div className="space-y-3">
                 {filterWithdrawals(allWithdrawals || []).length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">Aucun retrait trouvé</div>
+                  <EmptyState className="py-8">Aucun retrait trouvé</EmptyState>
                 ) : filterWithdrawals(allWithdrawals || []).map(w => (
                   <Card key={w.id} className={w.status === "pending" ? "border-yellow-500/30" : ""}>
                     <CardContent className="p-4">
@@ -446,7 +447,7 @@ export default function BankerPage() {
             ) : (
               <div className="space-y-2">
                 {filterHistory().length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">Aucun historique trouvé</div>
+                  <EmptyState className="py-8">Aucun historique trouvé</EmptyState>
                 ) : filterHistory().map(({ type, item, date }) => (
                   <Card key={`${type}-${item.id}`}>
                     <CardContent className="p-3">

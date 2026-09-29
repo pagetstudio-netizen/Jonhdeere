@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Check, X, Ban, Search, Loader2, ImageIcon, MessageSquare } from "lucide-react";
 import type { Deposit } from "@shared/schema";
+import EmptyState from "@/components/empty-state";
 
 interface DepositWithUser extends Deposit {
   user: {
@@ -304,9 +305,9 @@ export default function AdminDeposits() {
             );
           })
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
+          <EmptyState className="py-8">
             Aucun dépôt trouvé
-          </div>
+          </EmptyState>
         )}
       </div>
 

@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   getJohnDeereProductImage,
-  JOHN_DEERE_LOGO,
 } from "@/lib/john-deere-assets";
+import EmptyState from "@/components/empty-state";
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -138,10 +138,9 @@ export default function OrdersPage() {
             })}
           </div>
         ) : (
-          <div className="text-center py-10 flex flex-col items-center gap-2">
-            <img src={JOHN_DEERE_LOGO} alt="John Deere" className="w-40 h-40 object-contain opacity-90" />
+           <EmptyState className="text-center py-10 flex flex-col items-center gap-2">
             <p className="text-gray-500 font-medium">Aucun contenu pour le moment !</p>
-          </div>
+           </EmptyState>
         )}
       </div>
     </div>

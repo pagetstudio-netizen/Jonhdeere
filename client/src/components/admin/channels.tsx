@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus, Edit, Trash2, Loader2, Link } from "lucide-react";
 import type { PaymentChannel } from "@shared/schema";
+import EmptyState from "@/components/empty-state";
 
 const channelSchema = z.object({
   name: z.string().min(2, "Nom requis"),
@@ -181,9 +182,9 @@ export default function AdminChannels({ isSuperAdmin }: AdminChannelsProps) {
           </Card>
         ))
       ) : (
-        <div className="text-center py-8 text-muted-foreground">
+        <EmptyState className="py-8">
           Aucun canal de paiement
-        </div>
+        </EmptyState>
       )}
 
       <Dialog open={showForm || !!editChannel} onOpenChange={() => { setShowForm(false); setEditChannel(null); }}>

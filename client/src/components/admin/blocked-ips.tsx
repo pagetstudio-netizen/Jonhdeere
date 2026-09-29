@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Ban, Loader2, Plus, Trash2 } from "lucide-react";
+import EmptyState from "@/components/empty-state";
 
 export default function AdminBlockedIps() {
   const { toast } = useToast();
@@ -69,7 +70,7 @@ export default function AdminBlockedIps() {
         {isLoading ? (
           <Loader2 className="h-5 w-5 animate-spin" />
         ) : blockedIps.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucune adresse IP bloquée.</p>
+          <EmptyState size="compact">Aucune adresse IP bloquée.</EmptyState>
         ) : (
           <div className="space-y-2">
             {blockedIps.map((value) => (
