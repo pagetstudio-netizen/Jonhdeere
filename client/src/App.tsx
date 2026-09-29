@@ -7,7 +7,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import BottomNav from "@/components/bottom-nav";
 import { ADMIN_PATH } from "@/lib/admin-path";
-import { Loader2 } from "lucide-react";
 
 const LoginPage = lazy(() => import("@/pages/login"));
 const RegisterPage = lazy(() => import("@/pages/register"));
@@ -44,8 +43,13 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PageLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    <div className="page-loading-overlay" role="status" aria-label="Chargement de la page">
+      <span className="page-loading-spinner" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <span />
+      </span>
     </div>
   );
 }
@@ -55,11 +59,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PageLoading />;
   }
 
   if (!user) {
@@ -88,11 +88,7 @@ function BankerRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PageLoading />;
   }
 
   if (!user) return <Redirect to="/login" />;
@@ -105,11 +101,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PageLoading />;
   }
 
   if (!user || !user.isAdmin) {
@@ -123,11 +115,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PageLoading />;
   }
 
   if (user) {
