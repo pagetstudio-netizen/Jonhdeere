@@ -9,11 +9,28 @@ import type { Product } from "@shared/schema";
 
 import {
   getJohnDeereProductImage,
-  JOHN_DEERE_PHOTOS,
 } from "@/lib/john-deere-assets";
 import EmptyState from "@/components/empty-state";
 
-const productsReference = JOHN_DEERE_PHOTOS.tractorExpo;
+const revenueHero = "/john-deere/revenue/hero.jpg";
+const activeProductIcon = "/john-deere/revenue/active-product.png";
+const cumulativeRevenueIcon = "/john-deere/revenue/cumulative-revenue.png";
+
+function getPurchasedProductImage(imageUrl: string | null | undefined, index: number) {
+  const image = imageUrl?.trim();
+  if (image && image.startsWith("/") && !image.startsWith("//")) return image;
+
+  if (image) {
+    try {
+      const parsed = new URL(image);
+      if (parsed.protocol === "https:" || parsed.protocol === "http:") return image;
+    } catch {
+      // Use a local John Deere image when the stored URL is malformed.
+    }
+  }
+
+  return getJohnDeereProductImage(image, index);
+}
 
 interface ProductWithOwnership extends Product {
   isOwned: boolean;
@@ -24,7 +41,7 @@ interface ProductWithOwnership extends Product {
 export default function MyProductsPage() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"our" | "my">("our");
+  const [activeTab, setActiveTab] = useState<"our" | "my">("my");
   const [confirmProduct, setConfirmProduct] = useState<ProductWithOwnership | null>(null);
 
   const { data: products, isLoading: loadingProducts } = useQuery<ProductWithOwnership[]>({
@@ -68,87 +85,92 @@ export default function MyProductsPage() {
   const totalUserEarnings = Math.round(Number(user.totalEarnings || 0));
   const formatStatAmount = (amount: number) => `${amount.toLocaleString("fr-FR")} ${currency}`;
 
-  const formatDateTime = (dateStr: string) => {
+  const formatPurchaseDate = (dateStr: string) => {
     if (!dateStr) return "-";
     const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "-";
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     const year = d.getFullYear();
     const hours = String(d.getHours()).padStart(2, "0");
     const minutes = String(d.getMinutes()).padStart(2, "0");
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
-  };
-
-  // Format date as "20 Jul 2026, 15:00"
-  const formatPurchaseDate = (dateStr: string) => {
-    if (!dateStr) return "-";
-    const d = new Date(dateStr);
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const day = d.getDate();
-    const month = months[d.getMonth()];
-    const year = d.getFullYear();
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-    return `${day} ${month} ${year}, ${hours}:${minutes}`;
+    const seconds = String(d.getSeconds()).padStart(2, "0");
+    return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
   };
 
   return (
-    <main className="products-reference min-h-full bg-[#f1fff4] pb-24">
+    <main className="products-reference min-h-full bg-[#245bc3] pb-24">
       <style>{`
         .products-reference { color: #151515; font-family: Inter, Arial, sans-serif; }
-        .products-reference .products-screen { width: 100%; max-width: 500px; margin: 0 auto; overflow: hidden; }
-         .products-reference .products-hero { position: relative; height: min(70.31vw, 360px); min-height: 270px; overflow: hidden; background: #3fcb2d; }
-         .products-reference .products-hero img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; pointer-events: none; }
-         .products-reference .stat-panel { position: absolute; top: 58%; z-index: 1; display: flex; height: 38%; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 0; border-radius: 24px; background: #4bcf37; color: #fff; text-align: center; pointer-events: none; }
-         .products-reference .stat-panel.our { left: 4%; width: 45%; }
-         .products-reference .stat-panel.my { right: 4%; width: 45%; }
-         .products-reference .stat-value { display: block; max-width: 100%; overflow: hidden; padding: 0 8px; font-size: clamp(20px, 5vw, 30px); font-weight: 500; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
-         .products-reference .stat-label { display: block; font-size: clamp(14px, 3.5vw, 20px); font-weight: 500; line-height: 1; }
-         .products-reference .stat-toggle { position: absolute; top: 58%; z-index: 2; height: 38%; background: transparent; }
-         .products-reference .stat-toggle.our { left: 4%; width: 45%; }
-         .products-reference .stat-toggle.my { right: 4%; width: 45%; }
-         .products-reference .product-list { padding: 0 12px 20px; background: white; }
-         .products-reference .product-card { position: relative; height: 265px; margin-bottom: 0; overflow: hidden; border: 0; border-bottom: 1px solid #eeeeee; border-radius: 0; background: white; box-shadow: none; }
-         .products-reference .product-picture { position: absolute; top: 12px; right: 7px; left: auto; width: 154px; height: 154px; overflow: hidden; border: 2px solid #7fc9a2; border-radius: 11px; background: #fff; }
-         .products-reference .product-picture img { width: 100%; height: 100%; object-fit: cover; }
-         .products-reference .product-details { position: absolute; top: 17px; left: 31px; right: 181px; overflow: hidden; }
-         .products-reference .product-name { overflow: hidden; color: #42bd45; font-size: 23px; font-weight: 500; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
-         .products-reference .product-price { margin-top: 22px; color: #171717; font-size: 17px; font-weight: 400; }
-         .products-reference .product-line { margin-top: 12px; color: #171717; font-size: 16px; line-height: 1.15; white-space: normal; overflow-wrap: anywhere; }
-         .products-reference .product-line strong { margin-left: 8px; color: #171717; font-weight: 400; }
-         .products-reference .buy { position: absolute; right: 7px; bottom: 25px; display: grid; width: 154px; height: 61px; place-items: center; border-radius: 14px; background: linear-gradient(180deg, #43d338 0%, #19b948 100%); color: white; font-size: 18px; font-weight: 400; line-height: 1.1; text-align: center; }
-         .products-reference .my-card { height: 265px; padding-bottom: 0; }
-         .products-reference .my-card .product-details { position: absolute; top: 17px; left: 31px; right: 181px; margin-left: 0; padding-top: 0; padding-right: 0; }
-         .products-reference .my-card .product-picture { top: 12px; }
-         .products-reference .my-card .product-line { margin-top: 12px; }
+        .products-reference .products-screen { width: 100%; max-width: 576px; margin: 0 auto; }
+        .products-reference .products-hero { position: relative; height: min(48.1vw, 277px); background: #245bc3; }
+        .products-reference .products-hero-photo { display: block; width: 100%; height: min(38.7vw, 223px); object-fit: cover; object-position: center top; pointer-events: none; }
+        .products-reference .summary-card { position: absolute; z-index: 1; right: 3%; bottom: -32.5%; left: 3%; display: grid; grid-template-columns: 1fr 1fr; height: 52%; overflow: hidden; border-radius: clamp(20px, 5vw, 30px); background: #fff; }
+        .products-reference .summary-column { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: 5px; padding: 4px 8px; text-align: center; }
+        .products-reference .summary-column + .summary-column { border-left: 5px solid #245bc3; }
+        .products-reference .stat-label { overflow: hidden; color: #3c3c3c; font-size: clamp(13px, 3.5vw, 20px); font-weight: 600; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
+        .products-reference .summary-row { display: flex; min-width: 0; align-items: center; justify-content: center; gap: clamp(7px, 2vw, 12px); }
+        .products-reference .summary-icon { width: clamp(36px, 10.5vw, 61px); height: clamp(36px, 10.5vw, 61px); flex: 0 0 auto; object-fit: contain; }
+        .products-reference .stat-value { display: block; min-width: 0; overflow: hidden; color: #303030; font-size: clamp(26px, 8vw, 46px); font-weight: 700; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
+        .products-reference .stat-value.revenue { font-size: clamp(16px, 5.5vw, 32px); }
+        .products-reference .stat-toggle { position: absolute; z-index: 2; top: 80.5%; height: 52%; background: transparent; }
+        .products-reference .stat-toggle.our { left: 3%; width: 47%; }
+        .products-reference .stat-toggle.my { right: 3%; width: 47%; }
+        .products-reference .product-list { display: flex; flex-direction: column; gap: 18px; padding: 19.8vw 4% 20px; background: #245bc3; }
+        .products-reference .product-card { position: relative; width: 100%; min-height: min(82.6vw, 476px); margin: 0; padding: clamp(14px, 3.4vw, 20px) clamp(16px, 4.2vw, 25px) clamp(14px, 3.4vw, 20px); overflow: hidden; border: 0; border-radius: clamp(18px, 5vw, 28px); background: #fff; box-shadow: none; }
+        .products-reference .my-card { display: flex; flex-direction: column; }
+        .products-reference .my-card .product-name { margin: 0; overflow: hidden; color: #3e3e3e; font-size: clamp(17px, 3.8vw, 22px); font-weight: 600; line-height: 1.2; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+        .products-reference .my-card .product-picture { display: grid; width: 100%; height: clamp(92px, 22vw, 128px); margin: clamp(8px, 2vw, 12px) auto 0; place-items: center; }
+        .products-reference .my-card .product-picture img { display: block; width: 100%; height: 100%; object-fit: contain; }
+        .products-reference .term-pill { align-self: center; margin: clamp(6px, 1.5vw, 9px) auto clamp(9px, 2vw, 13px); padding: 5px clamp(18px, 4vw, 28px); border-radius: 8px; background: #1885e4; color: #fff; font-size: clamp(12px, 2.8vw, 16px); font-weight: 500; line-height: 1.25; white-space: nowrap; }
+        .products-reference .product-info { border-top: 1px solid #bdbdbd; padding-top: clamp(5px, 1.5vw, 9px); }
+        .products-reference .product-info-row { display: flex; min-height: clamp(22px, 5.9vw, 34px); align-items: baseline; justify-content: space-between; gap: 10px; color: #757575; font-size: clamp(12px, 2.7vw, 16px); line-height: 1.35; }
+        .products-reference .product-info-row span:first-child { flex: 0 0 auto; }
+        .products-reference .product-info-row strong { color: #181818; font-weight: 500; text-align: right; overflow-wrap: anywhere; }
+        .products-reference .catalog-card { min-height: 265px; padding: 0; overflow: hidden; border-bottom: 1px solid #eee; border-radius: 0; }
+        .products-reference .catalog-card .product-picture { position: absolute; top: 12px; right: 7px; width: 154px; height: 154px; overflow: hidden; border: 2px solid #7fc9a2; border-radius: 11px; background: #fff; }
+        .products-reference .catalog-card .product-picture img { width: 100%; height: 100%; object-fit: cover; }
+        .products-reference .catalog-card .product-details { position: absolute; top: 17px; left: 31px; right: 181px; overflow: hidden; }
+        .products-reference .catalog-card .product-name { overflow: hidden; color: #42bd45; font-size: 23px; font-weight: 500; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
+        .products-reference .catalog-card .product-price { margin-top: 22px; color: #171717; font-size: 17px; font-weight: 400; }
+        .products-reference .catalog-card .product-line { margin-top: 12px; color: #171717; font-size: 16px; line-height: 1.15; overflow-wrap: anywhere; }
+        .products-reference .catalog-card .product-line strong { margin-left: 8px; color: #171717; font-weight: 400; }
+        .products-reference .catalog-card .buy { position: absolute; right: 7px; bottom: 25px; display: grid; width: 154px; height: 61px; place-items: center; border-radius: 14px; background: linear-gradient(180deg, #43d338 0%, #19b948 100%); color: white; font-size: 18px; font-weight: 400; line-height: 1.1; text-align: center; }
         .products-reference .empty { display: flex; min-height: 260px; flex-direction: column; align-items: center; justify-content: center; border-radius: 9px; background: white; color: #777; }
         .products-reference .empty img { width: 150px; height: 150px; object-fit: contain; }
-        @media (max-width: 360px) {
-             .products-reference .stat-panel { gap: 7px; border-radius: 20px; }
-            .products-reference .stat-value { font-size: 18px; }
-            .products-reference .stat-label { font-size: 13px; }
-           .products-reference .product-picture { right: 5px; width: 112px; height: 112px; }
-           .products-reference .product-details, .products-reference .my-card .product-details { left: 18px; right: 126px; }
-           .products-reference .product-name { font-size: 17px; }
-           .products-reference .product-price { margin-top: 18px; font-size: 14px; }
-           .products-reference .product-line { margin-top: 9px; font-size: 13px; }
-           .products-reference .buy { right: 5px; width: 112px; height: 52px; font-size: 14px; }
+        @media (max-width: 390px) {
+          .products-reference .summary-column + .summary-column { border-left-width: 3px; }
+          .products-reference .summary-column { gap: 3px; padding-right: 4px; padding-left: 4px; }
+          .products-reference .catalog-card .product-picture { right: 5px; width: 112px; height: 112px; }
+          .products-reference .catalog-card .product-details { left: 18px; right: 126px; }
+          .products-reference .catalog-card .product-name { font-size: 17px; }
+          .products-reference .catalog-card .product-price { margin-top: 18px; font-size: 14px; }
+          .products-reference .catalog-card .product-line { margin-top: 9px; font-size: 13px; }
+          .products-reference .catalog-card .buy { right: 5px; width: 112px; height: 52px; font-size: 14px; }
         }
       `}</style>
 
       <div className="products-screen">
         <section className="products-hero" aria-label="Produits">
-          <img src={productsReference} alt="" />
-          <div className="stat-panel our" aria-label={`${activeProductCount} produit${activeProductCount === 1 ? "" : "s"} actif${activeProductCount === 1 ? "" : "s"}`}>
-            <span className="stat-value">{activeProductCount}</span>
-            <span className="stat-label">Mes produits</span>
+          <img className="products-hero-photo" src={revenueHero} alt="" />
+          <div className="summary-card" aria-label="Résumé des produits et revenus">
+            <div className="summary-column">
+              <span className="stat-label">Produit actif</span>
+              <div className="summary-row">
+                <img className="summary-icon" src={activeProductIcon} alt="" />
+                <span className="stat-value">{String(activeProductCount).padStart(2, "0")}</span>
+              </div>
+            </div>
+            <div className="summary-column">
+              <span className="stat-label">Revenus cumulés</span>
+              <div className="summary-row">
+                <span className="stat-value revenue">{formatStatAmount(totalUserEarnings)}</span>
+                <img className="summary-icon" src={cumulativeRevenueIcon} alt="" />
+              </div>
+            </div>
           </div>
-          <div className="stat-panel my" aria-label={`Revenus : ${formatStatAmount(totalUserEarnings)}`}>
-            <span className="stat-value">{formatStatAmount(totalUserEarnings)}</span>
-            <span className="stat-label">Mes revenus</span>
-          </div>
-          <button className="stat-toggle our" onClick={() => setActiveTab("our")} data-testid="tab-our-products" aria-label="Mes produits disponibles" />
-          <button className="stat-toggle my" onClick={() => setActiveTab("my")} data-testid="tab-my-product" aria-label="Mes revenus et produits achetés" />
+          <button className="stat-toggle our" onClick={() => setActiveTab("our")} data-testid="tab-our-products" aria-label="Voir les produits disponibles" />
+          <button className="stat-toggle my" onClick={() => setActiveTab("my")} data-testid="tab-my-product" aria-label="Voir mes revenus et produits achetés" />
         </section>
 
         <div className="product-list">
@@ -170,7 +192,7 @@ export default function MyProductsPage() {
                 return (
                   <div
                     key={product.id}
-                    className="product-card"
+                    className="product-card catalog-card"
                     data-testid={`product-card-${product.id}`}
                   >
                     <div className="product-picture"><img src={img} alt={product.name} /></div>
@@ -206,9 +228,9 @@ export default function MyProductsPage() {
                  </EmptyState>
               ) : (
                 allUserProducts.map((up: any, index: number) => {
-                  const cycleDays = up.product?.cycleDays || 60;
-                  const daysRemaining = up.daysRemaining || 0;
-                  const daysCompleted = Math.max(0, cycleDays - daysRemaining);
+                  const cycleDays = Number(up.product?.cycleDays) || 60;
+                  const daysRemaining = Number(up.daysRemaining) || 0;
+                  const daysCompleted = Math.max(0, Math.min(cycleDays, cycleDays - daysRemaining));
                   const earnedSoFar = parseFloat(up.totalEarned || "0");
 
                   return (
@@ -217,14 +239,32 @@ export default function MyProductsPage() {
                       className="product-card my-card"
                       data-testid={`my-product-card-${up.id}`}
                     >
-                      <div className="product-picture"><img src={getJohnDeereProductImage(up.product?.imageUrl, index)} alt={up.product?.name || "Produit"} /></div>
-                      <div className="product-details">
-                        <p className="product-name">{up.product?.name || "Produit"}</p>
-                        <p className="product-price">{Number(up.product?.price || 0).toLocaleString("fr-FR")} {currency}</p>
-                        <p className="product-line">Jours d'exécution :<strong>{daysCompleted} / {cycleDays}</strong></p>
-                        <p className="product-line">Revenu généré :<strong>{earnedSoFar.toLocaleString("fr-FR")} {currency}</strong></p>
-                        <p className="product-line">Revenu total :<strong>{Number(up.product?.totalReturn || 0).toLocaleString("fr-FR")} {currency}</strong></p>
-                        <p className="product-line">Date :<strong>{formatPurchaseDate(up.purchasedAt)}</strong></p>
+                      <p className="product-name">{up.product?.name || "Produit"}</p>
+                      <div className="product-picture">
+                        <img src={getPurchasedProductImage(up.product?.imageUrl, index)} alt={up.product?.name || "Produit acheté"} />
+                      </div>
+                      <span className="term-pill">Terme : {daysCompleted}/{cycleDays} Jours</span>
+                      <div className="product-info">
+                        <div className="product-info-row">
+                          <span>Prix :</span>
+                          <strong>{Number(up.product?.price || 0).toLocaleString("fr-FR")} {currency}</strong>
+                        </div>
+                        <div className="product-info-row">
+                          <span>Revenu journalier :</span>
+                          <strong>{Number(up.product?.dailyEarnings || 0).toLocaleString("fr-FR")} {currency}</strong>
+                        </div>
+                        <div className="product-info-row">
+                          <span>Revenu total :</span>
+                          <strong>{Number(up.product?.totalReturn || 0).toLocaleString("fr-FR")} {currency}</strong>
+                        </div>
+                        <div className="product-info-row">
+                          <span>Revenu reçu :</span>
+                          <strong>{earnedSoFar.toLocaleString("fr-FR")} {currency}</strong>
+                        </div>
+                        <div className="product-info-row">
+                          <span>Date d'achat :</span>
+                          <strong>{formatPurchaseDate(up.purchasedAt)}</strong>
+                        </div>
                       </div>
                     </div>
                   );

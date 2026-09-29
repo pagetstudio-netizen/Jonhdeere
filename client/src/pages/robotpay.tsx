@@ -5,6 +5,7 @@ import { Check, ChevronRight, ClipboardCheck, Copy, ExternalLink, ImageIcon, Loa
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import EmptyState from "@/components/empty-state";
 import type { ApiCountry } from "@/lib/countries";
 import type { PaymentNumber } from "@shared/schema";
 
@@ -328,7 +329,7 @@ export default function RobotPayPage() {
           {step === 0 && (
             <div className="space-y-5">
               <p className="px-1 text-xl text-white">Sélectionnez le mode de paiement :</p>
-               {loadingOperators ? <Loader2 className="w-7 h-7 animate-spin mx-auto text-blue-500" /> : operators.length === 0 ? <p className="text-center text-gray-500">Aucun opérateur disponible pour ce pays.</p> : (
+               {loadingOperators ? <Loader2 className="w-7 h-7 animate-spin mx-auto text-blue-500" /> : operators.length === 0 ? <EmptyState size="compact" className="text-center text-gray-500"><p>Aucun opérateur disponible pour ce pays.</p></EmptyState> : (
                  <div className="space-y-3">{operators.map((op, i) => <button key={`${op.id || op.name}-${i}`} onClick={() => chooseOperator(op)} className={`w-full flex items-center justify-between rounded-lg px-4 py-4 border-2 text-left ${operator === op ? "border-[#2885d8] bg-blue-50" : "border-gray-100 bg-white shadow-sm"}`}><span><span className="block font-semibold text-lg text-[#14538a]">{op.name}</span><span className="block text-xs text-gray-500">{op.manualNumber ? (op.manualNumber.paymentLink ? "Paiement par lien" : "Paiement par numéro") : "Paiement automatique"}</span></span><ChevronRight className="text-gray-400" /></button>)}</div>
               )}
             </div>
