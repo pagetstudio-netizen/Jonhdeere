@@ -48,8 +48,6 @@ export default function ServicePage() {
     },
   ];
 
-  const SupportIcon = supportIsWhatsApp ? MessageCircle : Headset;
-
   return (
     <main className="service-client-page">
       <div className="service-client-screen">

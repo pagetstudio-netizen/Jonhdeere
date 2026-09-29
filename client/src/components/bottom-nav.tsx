@@ -1,10 +1,14 @@
 import { useLocation } from "wouter";
+import homeIcon from "@assets/téléchargement_(61)_1790678176476.png";
+import revenueIcon from "@assets/téléchargement_(59)_1790678176511.png";
+import teamIcon from "@assets/téléchargement_(60)_1790678176538.png";
+import accountIcon from "@assets/téléchargement_(62)_1790678176573.png";
 
 const navItems = [
-  { path: "/",            label: "Accueil", icon: "/nav-home.png",    testId: "nav-accueil" },
-  { path: "/my-products", label: "Revenu",  icon: "/nav-revenue.png", testId: "nav-revenus" },
-  { path: "/team",        label: "Équipe",  icon: "/nav-team.png",    testId: "nav-equipe" },
-  { path: "/account",     label: "Compte",  icon: "/nav-account.png", testId: "nav-moi" },
+  { path: "/",            label: "Accueil", icon: homeIcon,    testId: "nav-accueil" },
+  { path: "/my-products", label: "Revenu",  icon: revenueIcon, testId: "nav-revenus" },
+  { path: "/team",        label: "Équipe",  icon: teamIcon,    testId: "nav-equipe" },
+  { path: "/account",     label: "Compte",  icon: accountIcon, testId: "nav-moi" },
 ];
 
 export default function BottomNav() {
@@ -38,7 +42,7 @@ export default function BottomNav() {
                   className="bottom-nav-icon"
                   aria-hidden="true"
                   style={{
-                    backgroundColor: isActive ? "#367c2b" : "#92969a",
+                    backgroundColor: "#367c2b",
                     WebkitMaskImage: `url(${icon})`,
                     maskImage: `url(${icon})`,
                   }}
