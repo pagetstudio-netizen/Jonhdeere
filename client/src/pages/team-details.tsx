@@ -46,7 +46,10 @@ const GREEN = "#367C2B";
 const GREEN_BG = "#e9f9ec";
 
 export default function TeamDetailsPage() {
-  const [activeLevel, setActiveLevel] = useState<1 | 2 | 3>(1);
+  const [activeLevel, setActiveLevel] = useState<1 | 2 | 3>(() => {
+    const requestedLevel = Number(new URLSearchParams(window.location.search).get("level"));
+    return requestedLevel === 2 || requestedLevel === 3 ? requestedLevel : 1;
+  });
   const [, navigate] = useLocation();
   const { user } = useAuth();
 
