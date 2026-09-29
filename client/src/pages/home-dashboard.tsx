@@ -1,14 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { Product } from "@shared/schema";
 import { X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
-import { apiRequest } from "@/lib/queryClient";
-import { JOHN_DEERE_LOGO, JOHN_DEERE_PHOTOS, JOHN_DEERE_PRODUCT_IMAGES } from "@/lib/john-deere-assets";
-import purchaseIcon from "@assets/freepik__icônes_produits_ou_achat_1774888657188-DKQ_Z0Mu_1790642501234.png";
+import { JOHN_DEERE_PHOTOS, JOHN_DEERE_PRODUCT_IMAGES } from "@/lib/john-deere-assets";
 import depositIcon from "@assets/ic-g-m_1790642732365.png";
 import withdrawalIcon from "@assets/ic-s-r_1790642772623.png";
 import serviceIcon from "@assets/ic-24-7_1790642772537.png";
@@ -29,15 +26,9 @@ const formatFcfa = (amount: number) =>
   `${Math.round(amount).toLocaleString("fr-FR")} FCFA`;
 
 export default function HomeDashboard() {
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
   const [, navigate] = useLocation();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
   const [welcomePopupOpen, setWelcomePopupOpen] = useState(false);
-  const [confirmProduct, setConfirmProduct] = useState<HomeProduct | null>(null);
-  const [activeProductIndex, setActiveProductIndex] = useState(0);
-  const carouselRef = useRef<HTMLDivElement | null>(null);
-  const scrollFrameRef = useRef<number | null>(null);
 
   const { data: settings } = useQuery<Record<string, string>>({
     queryKey: ["/api/settings"],
@@ -48,78 +39,11 @@ export default function HomeDashboard() {
     refetchOnWindowFocus: true,
   });
 
-  const purchaseMutation = useMutation({
-    mutationFn: async (product: HomeProduct) => {
-      const endpoint = product.isFree
-        ? `/api/products/${product.id}/claim-free`
-        : `/api/products/${product.id}/purchase`;
-      const response = await apiRequest("POST", endpoint, {});
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "L'achat n'a pas pu être effectué.");
-      }
-      await response.json();
-      return { isFree: Boolean(product.isFree) };
-    },
-    onSuccess: async ({ isFree }) => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/user/products"] });
-      refreshUser();
-      setConfirmProduct(null);
-      toast({
-        title: isFree ? "Produit réclamé !" : "Produit acheté !",
-        description: isFree
-          ? "Votre produit gratuit a été ajouté à votre compte."
-          : "Vous commencerez à recevoir des gains demain.",
-      });
-    },
-    onError: (error: Error) => {
-      setConfirmProduct(null);
-      toast({
-        title: "Achat impossible",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   const groupLink = settings?.groupLink || "";
   const channelLink = settings?.channelLink || "";
   const visibleProducts = products.filter((product) => product.isActive);
 
-  useEffect(() => {
-    setActiveProductIndex(0);
-    carouselRef.current?.scrollTo({ left: 0, behavior: "auto" });
-  }, [visibleProducts.length]);
-
-  useEffect(() => () => {
-    if (scrollFrameRef.current !== null) cancelAnimationFrame(scrollFrameRef.current);
-  }, []);
-
   if (!user) return null;
-
-  const handleCarouselScroll = () => {
-    if (scrollFrameRef.current !== null) cancelAnimationFrame(scrollFrameRef.current);
-    scrollFrameRef.current = requestAnimationFrame(() => {
-      const carousel = carouselRef.current;
-      if (!carousel) return;
-
-      const center = carousel.getBoundingClientRect().left + carousel.clientWidth / 2;
-      let closestIndex = 0;
-      let closestDistance = Number.POSITIVE_INFINITY;
-
-      carousel.querySelectorAll<HTMLElement>("[data-carousel-index]").forEach((card) => {
-        const cardCenter = card.getBoundingClientRect().left + card.getBoundingClientRect().width / 2;
-        const distance = Math.abs(center - cardCenter);
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestIndex = Number(card.dataset.carouselIndex) || 0;
-        }
-      });
-
-      setActiveProductIndex((current) => current === closestIndex ? current : closestIndex);
-    });
-  };
 
   const handleQuickAction = (path: string | null) => {
     if (path) {
@@ -468,6 +392,179 @@ export default function HomeDashboard() {
             .john-deere-home .product-buy,
             .john-deere-home .home-product-card {
               transition: none;
+            }
+          }
+          .john-deere-home .product-list {
+            display: grid;
+            gap: 14px;
+            margin-top: 14px;
+          }
+          .john-deere-home .product-list-card {
+            display: grid;
+            min-width: 0;
+            gap: 12px;
+            border: 1px solid #e4e9df;
+            border-radius: 16px;
+            padding: 12px;
+            background: #fff;
+            box-shadow: 0 5px 15px rgba(26, 55, 29, .09);
+          }
+          .john-deere-home .product-list-main {
+            display: grid;
+            min-width: 0;
+            min-height: 138px;
+            grid-template-columns: minmax(105px, 37%) minmax(0, 1fr);
+            gap: 12px;
+          }
+          .john-deere-home .product-list-photo {
+            min-width: 0;
+            min-height: 138px;
+            overflow: hidden;
+            border-radius: 11px;
+            background: #f3f5ee;
+          }
+          .john-deere-home .product-list-image {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 138px;
+            object-fit: cover;
+            object-position: center;
+          }
+          .john-deere-home .product-list-info {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            justify-content: center;
+            gap: 12px;
+          }
+          .john-deere-home .product-list-heading {
+            display: flex;
+            min-width: 0;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 6px;
+          }
+          .john-deere-home .product-list-name {
+            display: -webkit-box;
+            min-width: 0;
+            overflow: hidden;
+            color: #202124;
+            font-size: 16px;
+            font-weight: 750;
+            line-height: 1.2;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+          }
+          .john-deere-home .product-list-cycle {
+            flex: 0 0 auto;
+            border-radius: 0 10px 0 10px;
+            padding: 6px 8px;
+            background: #367c2b;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+          }
+          .john-deere-home .product-list-metrics {
+            display: grid;
+            min-width: 0;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 7px;
+          }
+          .john-deere-home .product-list-metric {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+            border-radius: 9px;
+            padding: 8px 7px;
+            background: #f4f5f1;
+          }
+          .john-deere-home .product-list-metric strong {
+            color: #28633a;
+            font-size: clamp(11px, 3.3vw, 16px);
+            font-weight: 800;
+            line-height: 1.1;
+            overflow-wrap: anywhere;
+          }
+          .john-deere-home .product-list-metric span {
+            color: #555c55;
+            font-size: 10px;
+            line-height: 1.15;
+          }
+          .john-deere-home .product-list-footer {
+            display: grid;
+            min-width: 0;
+            grid-template-columns: minmax(0, .85fr) minmax(135px, 1.15fr);
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid #edf0e9;
+            padding-top: 11px;
+          }
+          .john-deere-home .product-list-price {
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            gap: 2px;
+          }
+          .john-deere-home .product-list-price span {
+            color: #666c66;
+            font-size: 11px;
+            line-height: 1.1;
+          }
+          .john-deere-home .product-list-price strong {
+            color: #176c37;
+            font-size: clamp(15px, 4.1vw, 21px);
+            font-weight: 800;
+            line-height: 1.15;
+            overflow-wrap: anywhere;
+          }
+          .john-deere-home .product-list .product-buy {
+            min-height: 46px;
+            border-radius: 999px;
+            padding: 0 11px;
+            background: #086b2d;
+            font-size: 13px;
+            font-weight: 700;
+          }
+          .john-deere-home .product-list .product-buy:hover {
+            background: #075a27;
+          }
+          .john-deere-home .product-list .product-buy:active {
+            background: #064c21;
+          }
+          @media (max-width: 390px) {
+            .john-deere-home .product-list-main {
+              min-height: 124px;
+              grid-template-columns: minmax(96px, 36%) minmax(0, 1fr);
+              gap: 9px;
+            }
+            .john-deere-home .product-list-photo,
+            .john-deere-home .product-list-image {
+              min-height: 124px;
+            }
+            .john-deere-home .product-list-info {
+              gap: 9px;
+            }
+            .john-deere-home .product-list-metrics {
+              gap: 5px;
+            }
+            .john-deere-home .product-list-metric {
+              padding: 7px 5px;
+            }
+            .john-deere-home .product-list-metric span {
+              font-size: 9px;
+            }
+            .john-deere-home .product-list-footer {
+              grid-template-columns: minmax(0, .78fr) minmax(130px, 1.22fr);
+              gap: 7px;
+            }
+            .john-deere-home .product-list .product-buy {
+              padding: 0 8px;
+              font-size: 12px;
             }
           }
         `}</style>
