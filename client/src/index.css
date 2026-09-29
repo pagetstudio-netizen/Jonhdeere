@@ -470,6 +470,8 @@
 }
 
 .bottom-nav-icon {
+  width: 27px;
+  height: 27px;
   display: block;
   flex: none;
   -webkit-mask-position: center;

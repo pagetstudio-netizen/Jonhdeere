@@ -1,11 +1,10 @@
 import { useLocation } from "wouter";
-import { Home, TrendingUp, User, Users } from "lucide-react";
 
 const navItems = [
-  { path: "/",            label: "Accueil", icon: Home,       testId: "nav-accueil" },
-  { path: "/my-products", label: "Revenu",  icon: TrendingUp, testId: "nav-revenus" },
-  { path: "/team",        label: "Équipe",  icon: Users,      testId: "nav-equipe" },
-  { path: "/account",     label: "Compte",  icon: User,       testId: "nav-moi" },
+  { path: "/",            label: "Accueil", icon: "/nav-home.png",    testId: "nav-accueil" },
+  { path: "/my-products", label: "Revenu",  icon: "/nav-revenue.png", testId: "nav-revenus" },
+  { path: "/team",        label: "Équipe",  icon: "/nav-team.png",    testId: "nav-equipe" },
+  { path: "/account",     label: "Compte",  icon: "/nav-account.png", testId: "nav-moi" },
 ];
 
 export default function BottomNav() {
@@ -35,11 +34,14 @@ export default function BottomNav() {
               aria-current={isActive ? "page" : undefined}
             >
               <span className="relative flex h-[31px] w-[31px] items-center justify-center">
-                <Icon
+                <span
+                  className="bottom-nav-icon"
                   aria-hidden="true"
-                  size={27}
-                  strokeWidth={isActive ? 2.3 : 2}
-                  color={isActive ? "#367c2b" : "#92969a"}
+                  style={{
+                    backgroundColor: isActive ? "#367c2b" : "#92969a",
+                    WebkitMaskImage: `url(${icon})`,
+                    maskImage: `url(${icon})`,
+                  }}
                 />
                 {label === "Compte" && (
                   <span className="absolute -right-[5px] -top-[1px] grid h-[19px] min-w-[19px] place-items-center rounded-full bg-[#d7193f] px-[4px] text-[11px] font-medium leading-none text-white">
