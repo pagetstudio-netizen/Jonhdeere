@@ -115,6 +115,13 @@
   stroke-width: 2.3;
 }
 
+.account-balance-icon img {
+  display: block;
+  width: 33px;
+  height: 33px;
+  object-fit: contain;
+}
+
 .account-balance-copy {
   display: flex;
   min-width: 0;
@@ -238,6 +245,13 @@
   stroke-width: 2.2;
 }
 
+.account-shortcut-icon img {
+  display: block;
+  width: 29px;
+  height: 29px;
+  object-fit: contain;
+}
+
 .account-wallet-card {
   position: relative;
   display: grid;
@@ -272,6 +286,13 @@
   width: 25px;
   height: 25px;
   stroke-width: 2;
+}
+
+.account-wallet-icon img {
+  display: block;
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
 }
 
 .account-wallet-copy {
