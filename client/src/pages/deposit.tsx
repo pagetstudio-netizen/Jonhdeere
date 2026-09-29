@@ -727,12 +727,12 @@ export default function DepositPage() {
           font-weight: 500;
         }
         .recharge-reference .amount-heading-icon {
+          display: block;
           flex: 0 0 auto;
-          width: 23px;
-          height: 23px;
+          width: 28px;
+          height: 28px;
           object-fit: contain;
-          filter: grayscale(1) contrast(1.15);
-          mix-blend-mode: multiply;
+          filter: invert(1) grayscale(1) contrast(1.2);
         }
         .recharge-reference .preset-grid {
           display: grid;
