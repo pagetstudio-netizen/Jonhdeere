@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ExternalLink, Headset, MessageCircle, Send, UsersRound } from "lucide-react";
 import { Link } from "wouter";
-import supportAgentImage from "@assets/generated_images/service-support-hero-v2.png";
+import supportIllustration from "@assets/no-data-CHEGY3VX_1790677728650.png";
+import telegramIcon from "@assets/tg-1_1790677728702.png";
 import "./service.css";
 
 interface LinksSettings {
@@ -22,6 +23,7 @@ export default function ServicePage() {
   });
 
   const supportIsWhatsApp = settings?.supportType?.toLowerCase() === "whatsapp";
+  const supportIsTelegram = settings?.supportType?.toLowerCase() === "telegram";
   const supportTitle = supportIsWhatsApp ? "WhatsApp" : settings?.supportLabel || "Service client";
   const supportHref = settings?.supportLink || "https://t.me/sybotx";
 
@@ -32,6 +34,7 @@ export default function ServicePage() {
       href: settings?.channelLink || "https://t.me/sybotx",
       action: "Rejoindre",
       Icon: Send,
+      isTelegram: settings?.channelType?.toLowerCase() === "telegram",
       testId: "button-channel-link",
     },
     {
@@ -40,6 +43,7 @@ export default function ServicePage() {
       href: settings?.groupLink || "https://t.me/sybotx",
       action: "Rejoindre",
       Icon: UsersRound,
+      isTelegram: settings?.groupType?.toLowerCase() === "telegram",
       testId: "button-group-link",
     },
   ];
@@ -61,8 +65,8 @@ export default function ServicePage() {
           <section className="service-client-hero" aria-labelledby="service-client-title">
             <img
               className="service-client-hero-image"
-              src={supportAgentImage}
-              alt="Conseillère du service client disponible pour vous aider"
+              src={supportIllustration}
+              alt="Illustration d'une personne consultant un livre"
             />
             <div className="service-client-hero-copy">
               <h2 id="service-client-title">Service client</h2>
@@ -74,8 +78,17 @@ export default function ServicePage() {
 
         <section className="service-client-content" aria-label="Nous contacter">
           <article className="service-contact-card">
-            <span className="service-contact-icon service-contact-icon-support" aria-hidden="true">
-              <SupportIcon />
+            <span
+              className={`service-contact-icon service-contact-icon-support${supportIsTelegram ? " service-contact-icon-telegram" : ""}`}
+              aria-hidden="true"
+            >
+              {supportIsTelegram ? (
+                <img src={telegramIcon} alt="" />
+              ) : supportIsWhatsApp ? (
+                <MessageCircle />
+              ) : (
+                <Headset />
+              )}
             </span>
             <div className="service-contact-copy">
               <h2>{supportTitle}</h2>
@@ -94,10 +107,13 @@ export default function ServicePage() {
           </article>
 
           <section className="service-community-card" aria-label="Canaux officiels">
-            {communityLinks.map(({ title, description, href, action, Icon, testId }) => (
+            {communityLinks.map(({ title, description, href, action, Icon, isTelegram, testId }) => (
               <article className="service-community-row" key={testId}>
-                <span className="service-contact-icon" aria-hidden="true">
-                  <Icon />
+                <span
+                  className={`service-contact-icon${isTelegram ? " service-contact-icon-telegram" : ""}`}
+                  aria-hidden="true"
+                >
+                  {isTelegram ? <img src={telegramIcon} alt="" /> : <Icon />}
                 </span>
                 <div className="service-contact-copy">
                   <h2>{title}</h2>
