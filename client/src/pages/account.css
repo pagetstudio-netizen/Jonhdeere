@@ -381,6 +381,13 @@
   stroke-width: 2;
 }
 
+.account-link-icon img {
+  display: block;
+  width: 27px;
+  height: 27px;
+  object-fit: contain;
+}
+
 .account-link-logout .account-link-icon {
   background: #f8ecea;
   color: #ad493e;

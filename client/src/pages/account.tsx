@@ -8,17 +8,17 @@ import {
   CalendarCheck2,
   ChevronRight,
   CircleDollarSign,
-  Gift,
-  Headset,
-  History,
-  Info,
-  KeyRound,
   Loader2,
   LogOut,
   Shield,
   UsersRound,
   WalletCards,
 } from "lucide-react";
+import aboutIcon from "@assets/info_(1)_1790682898817.png";
+import passwordIcon from "@assets/sign_in_1790682898843.png";
+import giftCodeIcon from "@assets/rewards_1790682898867.png";
+import supportIcon from "@assets/help_1790682898889.png";
+import historyIcon from "@assets/withdraw_record_(1)_1790682898914.png";
 import type { WithdrawalWallet } from "@shared/schema";
 import { useAuth } from "@/lib/auth";
 import { getCountryByCode } from "@/lib/countries";
@@ -95,13 +95,13 @@ export default function AccountPage() {
   };
 
   const accountLinks = [
-    { label: "Historique", Icon: History, onSelect: () => navigate("/history") },
-    { label: "Code cadeau", Icon: Gift, onSelect: () => navigate("/gift-code") },
-    { label: "À propos", Icon: Info, onSelect: () => navigate("/about") },
-    { label: "Service client", Icon: Headset, onSelect: () => navigate("/service") },
+    { label: "Historique", image: historyIcon, onSelect: () => navigate("/history") },
+    { label: "Code cadeau", image: giftCodeIcon, onSelect: () => navigate("/gift-code") },
+    { label: "À propos", image: aboutIcon, onSelect: () => navigate("/about") },
+    { label: "Service client", image: supportIcon, onSelect: () => navigate("/service") },
     { label: "Équipe", Icon: UsersRound, onSelect: () => navigate("/team") },
     { label: "Règles", Icon: BookOpenText, onSelect: () => navigate("/rules") },
-    { label: "Mot de passe", Icon: KeyRound, onSelect: () => navigate("/change-password") },
+    { label: "Mot de passe", image: passwordIcon, onSelect: () => navigate("/change-password") },
     { label: "Bonus quotidien", Icon: CalendarCheck2, onSelect: () => navigate("/checkin") },
     { label: "Déconnexion", Icon: LogOut, onSelect: () => void handleLogout() },
   ];
@@ -205,7 +205,7 @@ export default function AccountPage() {
         <section className="account-services" aria-labelledby="account-services-title">
           <h2 id="account-services-title">Autres services</h2>
           <div className="account-links">
-            {accountLinks.map(({ label, Icon, onSelect }) => (
+            {accountLinks.map(({ label, Icon, image, onSelect }) => (
               <button
                 key={label}
                 type="button"
@@ -213,7 +213,7 @@ export default function AccountPage() {
                 onClick={onSelect}
               >
                 <span className="account-link-icon" aria-hidden="true">
-                  <Icon />
+                  {image ? <img src={image} alt="" /> : Icon && <Icon />}
                 </span>
                 <span>{label}</span>
               </button>
