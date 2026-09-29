@@ -3,8 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { getCountryByCode } from "@/lib/countries";
 import { useLocation } from "wouter";
-import { ChevronRight, Copy, Link2, UsersRound } from "lucide-react";
+import { ChevronRight, UsersRound } from "lucide-react";
 import { JOHN_DEERE_PHOTOS } from "@/lib/john-deere-assets";
+import groupIcon from "@assets/groupe_1790677429988.png";
+import copyIcon from "@assets/copie_1790677430042.png";
 import "./team.css";
 
 interface TeamStats {
@@ -135,13 +137,13 @@ export default function TeamPage() {
               onClick={() => copyValue(user.referralCode, "Code copié !")}
               data-testid="button-copy-code"
             >
-              <Copy aria-hidden="true" />
+              <img src={copyIcon} alt="" aria-hidden="true" />
               Copier
             </button>
           </div>
           <div className="team-invite-row team-invite-row-link">
             <span className="team-invite-icon" aria-hidden="true">
-              <Link2 />
+              <img src={groupIcon} alt="" />
             </span>
             <div className="team-invite-copy">
               <span>Lien d’invitation</span>
@@ -153,7 +155,7 @@ export default function TeamPage() {
               onClick={() => copyValue(referralLink, "Lien copié !")}
               data-testid="button-copy-link"
             >
-              <Copy aria-hidden="true" />
+              <img src={copyIcon} alt="" aria-hidden="true" />
               Copier
             </button>
           </div>
@@ -230,9 +232,11 @@ export default function TeamPage() {
                   <span className="team-example-emoji" aria-hidden="true">
                     {level.level === 1 ? "🤝" : level.level === 2 ? "👥" : "🌟"}
                   </span>
-                  Invitez {invitees} {invitees === 1 ? "ami" : "amis"} à investir {formatWholeNumber(exampleAmount)} francs
-                  CFA chacun : vous pouvez gagner environ{" "}
-                  <strong>{exampleEarnings(level.rate, invitees)} francs CFA</strong> au niveau {level.level}.
+                  <span className="team-example-copy">
+                    Invitez {invitees} {invitees === 1 ? "ami" : "amis"} à investir{" "}
+                    {formatWholeNumber(exampleAmount)} francs CFA chacun : vous pouvez gagner environ{" "}
+                    <strong>{exampleEarnings(level.rate, invitees)} francs CFA</strong> au niveau {level.level}.
+                  </span>
                 </li>
               );
             })}

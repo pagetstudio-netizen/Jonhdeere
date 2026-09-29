@@ -144,10 +144,18 @@
   background: rgba(255, 255, 255, .15);
 }
 
-.team-invite-icon svg {
+.team-invite-icon svg,
+.team-invite-icon img {
   width: 18px;
   height: 18px;
   stroke-width: 2.5;
+}
+
+.team-invite-icon img,
+.team-copy-button img {
+  display: block;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .team-invite-copy {
@@ -182,11 +190,11 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, .38);
   border-radius: 999px;
   padding: 0 11px;
-  background: #fff;
-  color: #286d35;
+  background: rgba(255, 255, 255, .16);
+  color: #fff;
   cursor: pointer;
   font: inherit;
   font-size: 13px;
@@ -195,13 +203,14 @@
   transition: transform .15s ease, background-color .15s ease;
 }
 
-.team-copy-button svg {
+.team-copy-button svg,
+.team-copy-button img {
   width: 14px;
   height: 14px;
 }
 
 .team-copy-button:hover {
-  background: #eff7eb;
+  background: rgba(255, 255, 255, .26);
 }
 
 .team-copy-button:active {
@@ -427,7 +436,7 @@
   line-height: 1.4;
 }
 
-.team-examples-list li > span {
+.team-example-emoji {
   display: inline-grid;
   width: 23px;
   min-height: 23px;
@@ -436,6 +445,14 @@
   font-size: 20px;
   font-weight: 400;
   line-height: 1.1;
+}
+
+.team-example-copy {
+  display: block;
+  min-width: 0;
+  color: #333a33;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .team-rule-emoji,
@@ -507,6 +524,11 @@
     min-height: 33px;
     padding: 0 8px;
     font-size: 12px;
+  }
+
+  .team-copy-button img {
+    width: 13px;
+    height: 13px;
   }
 
   .team-levels-section {
