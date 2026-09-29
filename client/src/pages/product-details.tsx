@@ -1,0 +1,228 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation, useRoute } from "wouter";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import type { Product } from "@shared/schema";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth";
+import { JOHN_DEERE_PRODUCT_IMAGES } from "@/lib/john-deere-assets";
+import "./product-details.css";
+
+type ProductWithClaimStatus = Product & {
+  canClaimFree?: boolean;
+};
+
+const formatFcfa = (amount: number) =>
+  `${Math.round(amount).toLocaleString("fr-FR")} FCFA`;
+
+export default function ProductDetailsPage() {
+  const { user, refreshUser } = useAuth();
+  const [, navigate] = useLocation();
+  const [, routeParams] = useRoute("/products/:id");
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const productId = Number(routeParams?.id);
+  const validProductId = Number.isInteger(productId) && productId > 0;
+
+  const {
+    data: products = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery<ProductWithClaimStatus[]>({
+    queryKey: ["/api/products"],
+    enabled: Boolean(user) && validProductId,
+    refetchOnWindowFocus: true,
+  });
+
+  const product = products.find((item) => item.id === productId && item.isActive);
+
+  const purchaseMutation = useMutation({
+    mutationFn: async (selectedProduct: ProductWithClaimStatus) => {
+      const endpoint = selectedProduct.isFree
+        ? `/api/products/${selectedProduct.id}/claim-free`
+        : `/api/products/${selectedProduct.id}/purchase`;
+      const response = await apiRequest("POST", endpoint, {});
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "L'achat n'a pas pu être effectué.");
+      }
+      await response.json();
+      return { isFree: Boolean(selectedProduct.isFree) };
+    },
+    onSuccess: async ({ isFree }) => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/user/products"] });
+      refreshUser();
+      setConfirmationOpen(false);
+      toast({
+        title: isFree ? "Produit réclamé !" : "Produit acheté !",
+        description: isFree
+          ? "Votre produit gratuit a été ajouté à votre compte."
+          : "Vous commencerez à recevoir des gains demain.",
+      });
+    },
+    onError: (purchaseError: Error) => {
+      setConfirmationOpen(false);
+      toast({
+        title: "Achat impossible",
+        description: purchaseError.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  if (!user) return null;
+
+  if (isLoading) {
+    return (
+      <main className="product-detail-page">
+        <div className="product-detail-state">
+          <Loader2 aria-label="Chargement du produit" className="h-8 w-8 animate-spin text-[#367c2b]" />
+        </div>
+      </main>
+    );
+  }
+
+  if (isError) {
+    return (
+      <main className="product-detail-page">
+        <div className="product-detail-state">
+          <p>{error instanceof Error ? error.message : "Impossible de charger ce produit."}</p>
+          <button type="button" className="product-detail-state-button" onClick={() => refetch()}>
+            Réessayer
+          </button>
+          <button type="button" className="product-detail-back-link" onClick={() => navigate("/")}>
+            Retour aux produits
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  if (!product) {
+    return (
+      <main className="product-detail-page">
+        <div className="product-detail-state">
+          <p>Ce produit n'est pas disponible.</p>
+          <button type="button" className="product-detail-state-button" onClick={() => navigate("/")}>
+            Retour aux produits
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  const price = Number(product.price) || 0;
+  const dailyEarnings = Number(product.dailyEarnings) || 0;
+  const cycleDays = Number(product.cycleDays) || 0;
+  const totalReturn = Number(product.totalReturn) || dailyEarnings * cycleDays;
+  const productIndex = products.findIndex((item) => item.id === product.id);
+  const image = product.imageUrl ||
+    JOHN_DEERE_PRODUCT_IMAGES[productIndex % JOHN_DEERE_PRODUCT_IMAGES.length] ||
+    JOHN_DEERE_PRODUCT_IMAGES[0];
+  const cannotClaimFree = Boolean(product.isFree && !product.canClaimFree);
+
+  return (
+    <main className="product-detail-page">
+      <div className="product-detail-shell">
+        <section className="product-detail-hero" aria-label={`Image de ${product.name}`}>
+          <img className="product-detail-image" src={image} alt={product.name} />
+          <button
+            type="button"
+            className="product-detail-back"
+            onClick={() => navigate("/")}
+            aria-label="Retour à l'accueil"
+          >
+            <ArrowLeft aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </section>
+
+        <section className="product-detail-content">
+          <h1 className="product-detail-title">{product.name}</h1>
+
+          <div className="product-detail-metrics" aria-label="Détails des gains">
+            <div className="product-detail-metric-row">
+              <span>Gain quotidien :</span>
+              <strong>{formatFcfa(dailyEarnings)}</strong>
+            </div>
+            <div className="product-detail-metric-row">
+              <span>Gain total :</span>
+              <strong>{formatFcfa(totalReturn)}</strong>
+            </div>
+            <div className="product-detail-metric-row">
+              <span>Cycle :</span>
+              <strong>{cycleDays} {cycleDays === 1 ? "jour" : "jours"}</strong>
+            </div>
+          </div>
+
+          <p className="product-detail-note">
+            Après l’achat, vos gains sont calculés automatiquement toutes les 24 heures et ajoutés à votre solde.
+          </p>
+        </section>
+      </div>
+
+      <div className="product-detail-purchase-bar">
+        <div className="product-detail-purchase-inner">
+          <div className="product-detail-price">
+            <span>Prix :</span>
+            <strong>{product.isFree ? "Gratuit" : formatFcfa(price)}</strong>
+          </div>
+          <button
+            type="button"
+            className="product-detail-buy"
+            onClick={() => setConfirmationOpen(true)}
+            disabled={cannotClaimFree || purchaseMutation.isPending}
+          >
+            {purchaseMutation.isPending
+              ? "Traitement…"
+              : cannotClaimFree
+                ? "Déjà réclamé"
+                : product.isFree
+                  ? "Réclamer"
+                  : "Acheter"}
+          </button>
+        </div>
+      </div>
+
+      <Dialog open={confirmationOpen} onOpenChange={setConfirmationOpen}>
+        <DialogContent className="max-w-[380px] border border-[#dce5d8] bg-white text-[#202124]">
+          <DialogHeader>
+            <DialogTitle>{product.isFree ? "Réclamer le produit" : "Confirmer l'achat"}</DialogTitle>
+            <DialogDescription>
+              {product.isFree
+                ? `Réclamer gratuitement ${product.name} ?`
+                : `Confirmez l'achat de ${product.name} au prix de ${formatFcfa(price)}.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              className="min-h-[42px] rounded-md bg-[#f1f3ef] px-4 font-semibold text-[#293327] disabled:opacity-60"
+              onClick={() => setConfirmationOpen(false)}
+              disabled={purchaseMutation.isPending}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              className="min-h-[42px] rounded-md bg-[#086b2d] px-4 font-semibold text-white hover:bg-[#075a27] disabled:opacity-60"
+              onClick={() => purchaseMutation.mutate(product)}
+              disabled={purchaseMutation.isPending || cannotClaimFree}
+            >
+              {purchaseMutation.isPending
+                ? "Traitement…"
+                : product.isFree
+                  ? "Réclamer"
+                  : "Confirmer"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </main>
+  );
+}

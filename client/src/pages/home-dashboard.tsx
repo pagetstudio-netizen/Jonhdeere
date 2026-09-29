@@ -589,14 +589,7 @@ export default function HomeDashboard() {
             ))}
           </section>
 
-          <section
-            ref={carouselRef}
-            className="product-carousel"
-            aria-label="Produits John Deere disponibles"
-            aria-roledescription="carrousel"
-            tabIndex={0}
-            onScroll={handleCarouselScroll}
-          >
+          <section className="product-list" aria-label="Produits John Deere disponibles">
             {productsLoading ? (
               <div className="product-loading">Chargement des produits…</div>
             ) : visibleProducts.length > 0 ? (
@@ -607,58 +600,50 @@ export default function HomeDashboard() {
                 const totalReturn = Number(product.totalReturn) || dailyEarnings * cycleDays;
                 const image =
                   product.imageUrl ||
-                  JOHN_DEERE_PRODUCT_IMAGES[index % JOHN_DEERE_PRODUCT_IMAGES.length] ||
-                  JOHN_DEERE_LOGO;
+                  JOHN_DEERE_PRODUCT_IMAGES[index % JOHN_DEERE_PRODUCT_IMAGES.length];
 
                 return (
-                  <article
-                    className={`home-product-card${activeProductIndex === index ? " is-active" : ""}`}
-                    data-carousel-index={index}
-                    key={product.id}
-                  >
-                    <div className="product-main-row">
-                      <div className="product-photo">
+                  <article className="product-list-card" key={product.id}>
+                    <div className="product-list-main">
+                      <div className="product-list-photo">
                         <img
-                          className="product-image"
+                          className="product-list-image"
                           src={image}
                           alt={product.name}
                           loading={index > 1 ? "lazy" : "eager"}
                         />
-                        <img
-                          className="product-mini-logo"
-                          src={JOHN_DEERE_LOGO}
-                          alt="John Deere"
-                        />
                       </div>
-                      <div className="product-info">
-                        <h2 className="product-name" title={product.name}>{product.name}</h2>
-                        <div className="product-price">{formatFcfa(price)}</div>
-                        <div className="product-metrics">
-                          <div className="product-metric">Gain / jour : {formatFcfa(dailyEarnings)}</div>
-                          <div className="product-metric">Durée : {cycleDays} jours</div>
-                          <div className="product-metric">Gain total : {formatFcfa(totalReturn)}</div>
+                      <div className="product-list-info">
+                        <div className="product-list-heading">
+                          <h2 className="product-list-name" title={product.name}>{product.name}</h2>
+                          <span className="product-list-cycle">{cycleDays} jours</span>
+                        </div>
+                        <div className="product-list-metrics">
+                          <div className="product-list-metric">
+                            <strong>{formatFcfa(dailyEarnings)}</strong>
+                            <span>Gains quotidiens</span>
+                          </div>
+                          <div className="product-list-metric">
+                            <strong>{formatFcfa(totalReturn)}</strong>
+                            <span>Gains totaux</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="product-buy"
-                      onClick={() => setConfirmProduct(product)}
-                      disabled={Boolean(product.isFree && !product.canClaimFree)}
-                      aria-label={`Acheter ${product.name}`}
-                    >
-                      <span
-                        className="product-buy-icon"
-                        aria-hidden="true"
-                        style={{
-                          WebkitMaskImage: `url(${purchaseIcon})`,
-                          maskImage: `url(${purchaseIcon})`,
-                        }}
-                      />
-                      {product.isFree
-                        ? product.canClaimFree ? "Réclamer" : "Déjà réclamé"
-                        : "Acheter maintenant"}
-                    </button>
+                    <div className="product-list-footer">
+                      <p className="product-list-price">
+                        <span>Prix</span>
+                        <strong>{product.isFree ? "Gratuit" : formatFcfa(price)}</strong>
+                      </p>
+                      <button
+                        type="button"
+                        className="product-buy"
+                        onClick={() => navigate(`/products/${product.id}`)}
+                        aria-label={`${product.isFree ? "Découvrir" : "Acheter"} ${product.name}`}
+                      >
+                        {product.isFree ? "Découvrir" : "Acheter maintenant"}
+                      </button>
+                    </div>
                   </article>
                 );
               })
@@ -668,39 +653,6 @@ export default function HomeDashboard() {
           </section>
         </div>
       </main>
-
-      <Dialog open={Boolean(confirmProduct)} onOpenChange={(open) => !open && setConfirmProduct(null)}>
-          <DialogContent className="max-w-[380px] border border-[#dce5d8] bg-white text-[#202124]">
-          <DialogHeader>
-            <DialogTitle>Confirmer l'achat</DialogTitle>
-            <DialogDescription>
-              {confirmProduct
-                ? confirmProduct.isFree
-                  ? `Réclamer gratuitement ${confirmProduct.name} ?`
-                  : `Confirmez l'achat de ${confirmProduct.name} au prix de ${formatFcfa(Number(confirmProduct.price) || 0)}.`
-                : ""}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-6 flex justify-end gap-2">
-            <button
-              type="button"
-              className="min-h-[42px] rounded-md bg-[#f1f3ef] px-4 font-semibold text-[#293327] disabled:opacity-60"
-              onClick={() => setConfirmProduct(null)}
-              disabled={purchaseMutation.isPending}
-            >
-              Annuler
-            </button>
-            <button
-              type="button"
-              className="min-h-[42px] rounded-md bg-[#086b2d] px-4 font-semibold text-white hover:bg-[#075a27] disabled:opacity-60"
-              onClick={() => confirmProduct && purchaseMutation.mutate(confirmProduct)}
-              disabled={!confirmProduct || purchaseMutation.isPending}
-            >
-              {purchaseMutation.isPending ? "Traitement…" : confirmProduct?.isFree ? "Réclamer" : "Confirmer"}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={welcomePopupOpen} onOpenChange={setWelcomePopupOpen}>
         <DialogContent className="max-h-[calc(100vh-24px)] max-w-[380px] overflow-y-auto overflow-x-visible border-0 bg-transparent p-0 shadow-none [&>button:last-child]:hidden">
