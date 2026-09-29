@@ -17,7 +17,7 @@ export default function BottomNav() {
       style={{ borderColor: "#e9e9e9" }}
     >
       <div className="mx-auto grid h-[68px] max-w-[512px] grid-cols-4 items-center">
-        {navItems.map(({ path, label, icon: Icon, testId }) => {
+        {navItems.map(({ path, label, icon, testId }) => {
           const isActive = location === path;
 
           return (
