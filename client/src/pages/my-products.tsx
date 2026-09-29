@@ -1,20 +1,24 @@
-import { useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { getCountryByCode } from "@/lib/countries";
 import { Loader2 } from "lucide-react";
 import type { Product } from "@shared/schema";
 
-import {
-  getJohnDeereProductImage,
-} from "@/lib/john-deere-assets";
+import { getJohnDeereProductImage, JOHN_DEERE_PHOTOS } from "@/lib/john-deere-assets";
 import EmptyState from "@/components/empty-state";
 
-const revenueHero = "/john-deere/revenue/hero.jpg";
+const revenueHero = JOHN_DEERE_PHOTOS.homeHero;
 const activeProductIcon = "/john-deere/revenue/active-product.png";
 const cumulativeRevenueIcon = "/john-deere/revenue/cumulative-revenue.png";
+
+interface UserProduct {
+  id: number;
+  purchasedAt: string;
+  daysRemaining: number;
+  totalEarned: string | number;
+  status: string;
+  product: Product | null;
+}
 
 function getPurchasedProductImage(imageUrl: string | null | undefined, index: number) {
   const image = imageUrl?.trim();
@@ -32,53 +36,17 @@ function getPurchasedProductImage(imageUrl: string | null | undefined, index: nu
   return getJohnDeereProductImage(image, index);
 }
 
-interface ProductWithOwnership extends Product {
-  isOwned: boolean;
-  canClaimFree: boolean;
-  ownedCount?: number;
-}
-
 export default function MyProductsPage() {
-  const { user, refreshUser } = useAuth();
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"our" | "my">("my");
-  const [confirmProduct, setConfirmProduct] = useState<ProductWithOwnership | null>(null);
+  const { user } = useAuth();
 
-  const { data: products, isLoading: loadingProducts } = useQuery<ProductWithOwnership[]>({
-    queryKey: ["/api/products"],
-  });
-
-  const { data: userProducts, isLoading: loadingUserProducts } = useQuery<any[]>({
+  const { data: userProducts, isLoading: loadingUserProducts } = useQuery<UserProduct[]>({
     queryKey: ["/api/user/products"],
-  });
-
-  const purchaseMutation = useMutation({
-    mutationFn: async (productId: number) => {
-      const response = await apiRequest("POST", `/api/products/${productId}/purchase`, {});
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Erreur");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/products"] });
-      refreshUser();
-      setConfirmProduct(null);
-      toast({ title: "Produit acheté !", description: "Vous commencerez à recevoir des gains demain." });
-    },
-    onError: (error: any) => {
-      setConfirmProduct(null);
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    },
   });
 
   if (!user) return null;
 
   const country = getCountryByCode(user.country);
   const currency = country?.currency === "FCFA" ? "XOF" : country?.currency || "XOF";
-  const paidProducts = products?.filter(p => !p.isFree) || [];
   const allUserProducts = userProducts || [];
   const activeUserProducts = allUserProducts.filter(up => up.status === "active");
   const activeProductCount = activeUserProducts.length;
