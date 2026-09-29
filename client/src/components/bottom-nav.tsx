@@ -1,8 +1,8 @@
 import { useLocation } from "wouter";
-import homeIcon from "@assets/téléchargement_(61)_1790678176476.png";
-import revenueIcon from "@assets/téléchargement_(59)_1790678176511.png";
-import teamIcon from "@assets/téléchargement_(60)_1790678176538.png";
-import accountIcon from "@assets/téléchargement_(62)_1790678176573.png";
+import homeIcon from "@assets/nav-home-mask.png";
+import revenueIcon from "@assets/nav-revenue-mask.png";
+import teamIcon from "@assets/nav-team-mask.png";
+import accountIcon from "@assets/nav-account-mask.png";
 
 const navItems = [
   { path: "/",            label: "Accueil", icon: homeIcon,    testId: "nav-accueil" },
@@ -47,11 +47,6 @@ export default function BottomNav() {
                     maskImage: `url(${icon})`,
                   }}
                 />
-                {label === "Compte" && (
-                  <span className="absolute -right-[5px] -top-[1px] grid h-[19px] min-w-[19px] place-items-center rounded-full bg-[#d7193f] px-[4px] text-[11px] font-medium leading-none text-white">
-                    1
-                  </span>
-                )}
               </span>
               <span className="text-[12px] font-medium leading-none" style={{ color: isActive ? "#28633a" : "#7b7d80" }}>
                 {label}
