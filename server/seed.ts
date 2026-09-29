@@ -173,7 +173,6 @@ export async function seed() {
   const existingProducts = await db.select().from(products);
   if (existingProducts.length === 0) {
     const defaultProducts = [
-      { name: "Bonus Gratuit", price: 0, dailyEarnings: 50, cycleDays: 1, totalReturn: 50, isFree: true, sortOrder: 0 },
       { name: "VIP 1", price: 4000, dailyEarnings: 300, cycleDays: 90, totalReturn: 27000, sortOrder: 1 },
       { name: "VIP 2", price: 10000, dailyEarnings: 800, cycleDays: 90, totalReturn: 72000, sortOrder: 2 },
       { name: "VIP 3", price: 15000, dailyEarnings: 1500, cycleDays: 90, totalReturn: 135000, sortOrder: 3 },
@@ -202,7 +201,8 @@ export async function seed() {
     for (let index = 0; index < orderedProducts.length; index += 1) {
       const product = orderedProducts[index];
       if (!product) continue;
-      const imageUrl = JOHN_DEERE_PRODUCT_IMAGE_PATHS[index % JOHN_DEERE_PRODUCT_IMAGE_PATHS.length];
+      const imageIndex = product.name === "VIP 1" ? 0 : product.sortOrder;
+      const imageUrl = JOHN_DEERE_PRODUCT_IMAGE_PATHS[imageIndex % JOHN_DEERE_PRODUCT_IMAGE_PATHS.length];
       await db.update(products).set({ imageUrl }).where(eq(products.id, product.id));
     }
     await db.insert(platformSettings).values({ key: imageMigrationKey, value: "1" });
