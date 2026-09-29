@@ -30,7 +30,6 @@ const WalletPage = lazy(() => import("@/pages/wallet"));
 const ChangePasswordPage = lazy(() => import("@/pages/change-password"));
 const AboutPage = lazy(() => import("@/pages/about"));
 const RulesPage = lazy(() => import("@/pages/rules"));
-const GiftCodePage = lazy(() => import("@/pages/gift-code"));
 const TeamDetailsPage = lazy(() => import("@/pages/team-details"));
 const MyProductsPage = lazy(() => import("@/pages/my-products"));
 const CheckinPage = lazy(() => import("@/pages/checkin"));
@@ -304,7 +303,7 @@ function Router() {
       </Route>
       <Route path="/gift-code">
         <ProtectedRoute>
-          <GiftCodePage />
+          <Redirect to="/account?giftCode=open" />
         </ProtectedRoute>
       </Route>
       <Route path="/team-details">

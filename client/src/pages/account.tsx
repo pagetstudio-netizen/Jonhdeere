@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ADMIN_PATH } from "@/lib/admin-path";
 import { JOHN_DEERE_LOGO } from "@/lib/john-deere-assets";
+import GiftCodeModal from "@/components/gift-code-modal";
 import "./account.css";
 
 interface TeamStatsSummary {
@@ -37,6 +38,9 @@ export default function AccountPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [showPinModal, setShowPinModal] = useState(false);
+  const [showGiftCodeModal, setShowGiftCodeModal] = useState(
+    () => new URLSearchParams(window.location.search).get("giftCode") === "open",
+  );
   const [adminPin, setAdminPin] = useState("");
 
   const { data: teamStats, isLoading: teamStatsLoading, isError: teamStatsError } =
@@ -91,9 +95,16 @@ export default function AccountPage() {
     setShowPinModal(true);
   };
 
+  const handleGiftCodeModalChange = (open: boolean) => {
+    setShowGiftCodeModal(open);
+    if (!open && new URLSearchParams(window.location.search).get("giftCode") === "open") {
+      navigate("/account", { replace: true });
+    }
+  };
+
   const accountLinks = [
     { label: "Historique", image: historyIcon, onSelect: () => navigate("/history") },
-    { label: "Code cadeau", image: giftCodeIcon, onSelect: () => navigate("/gift-code") },
+    { label: "Code cadeau", image: giftCodeIcon, onSelect: () => setShowGiftCodeModal(true) },
     { label: "À propos", image: aboutIcon, onSelect: () => navigate("/about") },
     { label: "Mot de passe", image: passwordIcon, onSelect: () => navigate("/change-password") },
     { label: "Déconnexion", Icon: LogOut, onSelect: () => void handleLogout() },
@@ -261,6 +272,8 @@ export default function AccountPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <GiftCodeModal open={showGiftCodeModal} onOpenChange={handleGiftCodeModalChange} />
     </main>
   );
 }
