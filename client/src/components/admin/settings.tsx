@@ -73,6 +73,8 @@ const settingsSchema = z.object({
   westpayChannelName: z.string().min(1, "Nom requis"),
   westpayCountries: z.string(),
   westpayWebhookSecret: z.string(),
+  ppayprosPayinEnabled: z.boolean(),
+  ppayprosPayoutEnabled: z.boolean(),
   ashtechEnabled: z.boolean(),
   ashtechChannelName: z.string().min(1, "Nom requis"),
   ashtechCountries: z.string(),
@@ -144,6 +146,8 @@ export default function AdminSettings({ isSuperAdmin }: AdminSettingsProps) {
       westpayChannelName: "WestPay",
       westpayCountries: "",
       westpayWebhookSecret: "",
+      ppayprosPayinEnabled: false,
+      ppayprosPayoutEnabled: false,
       ashtechEnabled: true,
       ashtechChannelName: "AshtechPay",
       ashtechCountries: "BF,TG,CM,BJ",
@@ -188,6 +192,8 @@ export default function AdminSettings({ isSuperAdmin }: AdminSettingsProps) {
         westpayChannelName: settings.westpayChannelName || "WestPay",
         westpayCountries: settings.westpayCountries || "",
         westpayWebhookSecret: settings.westpayWebhookSecret || "",
+        ppayprosPayinEnabled: settings.ppayprosPayinEnabled === "true",
+        ppayprosPayoutEnabled: settings.ppayprosPayoutEnabled === "true",
         sendavapayEnabled: settings.sendavapayEnabled === "true",
         sendavapayChannelName: settings.sendavapayChannelName || "SendavaPay",
         sendavapayWebhookSecret: settings.sendavapayWebhookSecret || "",
@@ -215,6 +221,8 @@ export default function AdminSettings({ isSuperAdmin }: AdminSettingsProps) {
         groupEnabled: String(data.groupEnabled),
         sendavapayEnabled: String(data.sendavapayEnabled),
         westpayEnabled: String(data.westpayEnabled),
+        ppayprosPayinEnabled: String(data.ppayprosPayinEnabled),
+        ppayprosPayoutEnabled: String(data.ppayprosPayoutEnabled),
         ashtechEnabled: String(data.ashtechEnabled),
         inpayEnabled: String(data.inpayEnabled),
       };
@@ -684,6 +692,52 @@ export default function AdminSettings({ isSuperAdmin }: AdminSettingsProps) {
               <p>• <code className="bg-orange-100 px-1 rounded">WESTPAY_API_KEY_TG</code>, <code className="bg-orange-100 px-1 rounded">WESTPAY_API_KEY_BF</code>… — clé API par pays</p>
               <p>• URL webhook à configurer dans votre compte WestPay : <code className="bg-orange-100 px-1 rounded">/api/webhooks/westpay</code></p>
               <p className="font-semibold text-red-600 mt-1">⚠ Ne jamais saisir ces clés dans un formulaire ou les stocker en base de données.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── PPayPros ── */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Zap className="w-5 h-5 text-emerald-600" />
+              PPayPros — Bénin
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-xl border p-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Activer les dépôts PPayPros</p>
+                <p className="text-xs text-gray-500">Affiche PPayPros au Bénin et redirige le client vers le lien de paiement retourné par l’API.</p>
+              </div>
+              <FormField control={form.control} name="ppayprosPayinEnabled" render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormLabel className="text-xs text-gray-500">{field.value ? "Actif" : "Désactivé"}</FormLabel>
+                  <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                </FormItem>
+              )} />
+            </div>
+            <div className="flex items-center justify-between rounded-xl border p-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Activer les retraits PPayPros</p>
+                <p className="text-xs text-gray-500">Ajoute l’envoi manuel à PPayPros pour les retraits béninois en attente.</p>
+              </div>
+              <FormField control={form.control} name="ppayprosPayoutEnabled" render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormLabel className="text-xs text-gray-500">{field.value ? "Actif" : "Désactivé"}</FormLabel>
+                  <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                </FormItem>
+              )} />
+            </div>
+            <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3 text-xs text-emerald-800 space-y-1">
+              <p className="font-semibold">Configuration requise dans les Secrets :</p>
+              <p>• <code className="bg-emerald-100 px-1 rounded">PPAYPROS_MCH_NO</code> — numéro marchand</p>
+              <p>• <code className="bg-emerald-100 px-1 rounded">PPAYPROS_APP_ID</code> — identifiant de l’application</p>
+              <p>• <code className="bg-emerald-100 px-1 rounded">PPAYPROS_PRIVATE_KEY</code> — clé privée de signature</p>
+              <p>Callbacks à configurer côté PPayPros :</p>
+              <p>• <code className="bg-emerald-100 px-1 rounded">/api/webhooks/ppaypros/payin</code></p>
+              <p>• <code className="bg-emerald-100 px-1 rounded">/api/webhooks/ppaypros/payout</code></p>
+              <p className="font-semibold text-red-600 mt-1">Les identifiants ne sont jamais enregistrés dans les paramètres du panel.</p>
             </div>
           </CardContent>
         </Card>

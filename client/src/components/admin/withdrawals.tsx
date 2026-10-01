@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Check, X, Search, Loader2, Send } from "lucide-react";
+import { Check, X, Search, Loader2, Send, RefreshCw } from "lucide-react";
 import type { Withdrawal } from "@shared/schema";
 import EmptyState from "@/components/empty-state";
 
@@ -34,6 +34,11 @@ export default function AdminWithdrawals() {
       return res.json();
     },
   });
+
+  const { data: platformSettings } = useQuery<Record<string, string>>({
+    queryKey: ["/api/settings"],
+  });
+  const ppayprosPayoutEnabled = platformSettings?.ppayprosPayoutEnabled === "true";
 
   const withdrawals = allWithdrawals?.filter(w =>
     statusFilter === "all" ? true : w.status === statusFilter
@@ -87,12 +92,45 @@ export default function AdminWithdrawals() {
     onSettled: () => setProcessingId(null),
   });
 
+  const ppayprosMutation = useMutation({
+    mutationFn: async ({ id, checkStatus }: { id: number; checkStatus: boolean }) => {
+      setProcessingId(id);
+      const action = checkStatus ? "ppaypros/status" : "ppaypros";
+      const res = await fetch(`/api/admin/withdrawals/${id}/${action}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || `Erreur ${res.status}`);
+      return { data, checkStatus };
+    },
+    onSuccess: ({ data, checkStatus }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      if (checkStatus) {
+        const status = data.status === "approved"
+          ? "confirmé"
+          : data.status === "rejected"
+            ? "refusé"
+            : "toujours en traitement";
+        toast({ title: "Statut PPayPros vérifié", description: `Le retrait est ${status}.` });
+      } else {
+        toast({ title: "Retrait envoyé à PPayPros" });
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: "Erreur PPayPros", description: error.message, variant: "destructive" });
+    },
+    onSettled: () => setProcessingId(null),
+  });
+
   const filteredWithdrawals = withdrawals?.filter(w =>
     w.accountNumber.includes(filter) ||
     w.user.phone.includes(filter) ||
     w.user.fullName.toLowerCase().includes(filter.toLowerCase()) ||
     ((w as any).inpayOutTradeNo && (w as any).inpayOutTradeNo.toLowerCase().includes(filter.toLowerCase())) ||
-    ((w as any).inpayOrderNumber && (w as any).inpayOrderNumber.toLowerCase().includes(filter.toLowerCase()))
+    ((w as any).inpayOrderNumber && (w as any).inpayOrderNumber.toLowerCase().includes(filter.toLowerCase())) ||
+    (w.omnipayReference && w.omnipayReference.toLowerCase().includes(filter.toLowerCase()))
   ) || [];
 
   return (
@@ -207,10 +245,22 @@ export default function AdminWithdrawals() {
                       <p className="font-mono font-medium text-foreground">{(withdrawal as any).inpayOrderNumber}</p>
                     </div>
                   )}
+                  {withdrawal.omnipayReference?.startsWith(`PPOUT-${withdrawal.id}`) && (
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground">Référence marchand PPayPros</p>
+                      <p className="font-mono font-medium text-foreground">{withdrawal.omnipayReference}</p>
+                    </div>
+                  )}
+                  {withdrawal.omnipayId && withdrawal.omnipayReference?.startsWith(`PPOUT-${withdrawal.id}`) && (
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground">Identifiant transfert PPayPros</p>
+                      <p className="font-mono font-medium text-foreground">{withdrawal.omnipayId}</p>
+                    </div>
+                  )}
                 </div>
 
                 {withdrawal.status === "pending" && (
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       size="sm"
                       variant="outline"
@@ -223,6 +273,20 @@ export default function AdminWithdrawals() {
                         ? <Loader2 className="w-4 h-4 animate-spin" />
                         : <><Send className="w-4 h-4 mr-1" /> Envoyer à InPay</>}
                     </Button>
+                    {ppayprosPayoutEnabled && withdrawal.country.trim().toUpperCase() === "BJ" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => ppayprosMutation.mutate({ id: withdrawal.id, checkStatus: false })}
+                        disabled={processingId === withdrawal.id}
+                        data-testid={`button-send-ppaypros-${withdrawal.id}`}
+                      >
+                        {processingId === withdrawal.id
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <><Send className="w-4 h-4 mr-1" /> Envoyer à PPayPros</>}
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       className="flex-1"
@@ -243,6 +307,21 @@ export default function AdminWithdrawals() {
                     </Button>
                   </div>
                 )}
+                {withdrawal.status === "processing" &&
+                  withdrawal.omnipayReference === `PPOUT-${withdrawal.id}` && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => ppayprosMutation.mutate({ id: withdrawal.id, checkStatus: true })}
+                      disabled={processingId === withdrawal.id}
+                      data-testid={`button-check-ppaypros-${withdrawal.id}`}
+                    >
+                      {processingId === withdrawal.id
+                        ? <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                        : <><RefreshCw className="w-4 h-4 mr-1" /> Vérifier le statut PPayPros</>}
+                    </Button>
+                  )}
               </CardContent>
             </Card>
           ))

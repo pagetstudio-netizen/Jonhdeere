@@ -113,6 +113,9 @@ export default function DepositPage() {
   const westpayAvailable = westpayEnabled && (
     !westpayCountries || westpayCountries.split(",").map(c => c.trim()).includes(country)
   );
+  const ppayprosAvailable =
+    country.toUpperCase() === "BJ" &&
+    platformSettings?.ppayprosPayinEnabled === "true";
   const inpayEnabled = platformSettings?.inpayEnabled === "true";
   const inpayChannelName = platformSettings?.inpayChannelName || "InPay";
   const inpayCountries = platformSettings?.inpayCountries || "";
@@ -322,6 +325,18 @@ export default function DepositPage() {
     }
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("ppaypros_status") !== "returned") return;
+
+    window.history.replaceState({}, "", "/deposit");
+    toast({
+      title: "Retour de PPayPros reçu",
+      description: "Le solde sera crédité uniquement après confirmation du paiement par PPayPros.",
+    });
+    queryClient.invalidateQueries({ queryKey: ["/api/deposits/history"] });
+  }, []);
+
   const wpInitiateMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/deposits", {
@@ -344,6 +359,32 @@ export default function DepositPage() {
       }
     },
     onError: (e: any) => toast({ title: "Erreur WestPay", description: e.message, variant: "destructive" }),
+  });
+
+  const ppayprosInitiateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/deposits", {
+        amount: Number(amount),
+        accountName: user?.fullName || "",
+        accountNumber: user?.phone || "",
+        paymentMethod: "PPayPros",
+        country,
+        usePpaypros: true,
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Erreur PPayPros");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.ppayprosUrl) {
+        window.location.assign(data.ppayprosUrl);
+      } else {
+        toast({ title: "Lien PPayPros indisponible", description: "Aucun lien de paiement n'a été renvoyé." , variant: "destructive" });
+      }
+    },
+    onError: (error: any) => toast({ title: "Erreur PPayPros", description: error.message, variant: "destructive" }),
   });
 
   const inpayInitiateMutation = useMutation({
@@ -543,6 +584,14 @@ export default function DepositPage() {
       });
       return;
     }
+    if (ppayprosAvailable && !Number.isInteger(Number(amount))) {
+      toast({
+        title: "Montant invalide",
+        description: "PPayPros accepte uniquement un montant entier en FCFA.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     openRobotPay();
   };
@@ -550,6 +599,10 @@ export default function DepositPage() {
   const openRobotPay = () => {
     if (!depositCountry) {
       toast({ title: "Pays requis", description: "Sélectionnez le pays du paiement.", variant: "destructive" });
+      return;
+    }
+    if (ppayprosAvailable) {
+      ppayprosInitiateMutation.mutate();
       return;
     }
     if (inpayAvailable) {
@@ -942,9 +995,11 @@ export default function DepositPage() {
         <button
           className="continue"
           onClick={handleAmountNext}
-          disabled={!depositCountry || inpayInitiateMutation.isPending || wpInitiateMutation.isPending}
+          disabled={!depositCountry || inpayInitiateMutation.isPending || wpInitiateMutation.isPending || ppayprosInitiateMutation.isPending}
         >
-          {(inpayInitiateMutation.isPending || wpInitiateMutation.isPending) ? "Chargement…" : "Recharger"}
+          {(inpayInitiateMutation.isPending || wpInitiateMutation.isPending || ppayprosInitiateMutation.isPending)
+            ? "Chargement…"
+            : ppayprosAvailable ? "Payer avec PPayPros" : "Recharger"}
         </button>
 
         <section className="instructions" aria-label="Instructions de recharge">

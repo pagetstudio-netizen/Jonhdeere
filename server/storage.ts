@@ -47,6 +47,7 @@ export interface IStorage {
   getDepositByAshtechTransactionId(transactionId: string): Promise<Deposit | undefined>;
   getPendingAshtechDeposits(): Promise<Deposit[]>;
   claimDepositApproval(id: number): Promise<Deposit | undefined>;
+  claimDepositRejection(id: number): Promise<Deposit | undefined>;
   claimAdminDepositApproval(id: number, processedBy: number): Promise<Deposit | undefined>;
   getDeposits(status?: string): Promise<(Deposit & { user: User })[]>;
   getUserDeposits(userId: number): Promise<Deposit[]>;
@@ -63,7 +64,10 @@ export interface IStorage {
   createWithdrawal(data: Partial<Withdrawal>): Promise<Withdrawal>;
   getWithdrawals(status?: string): Promise<(Withdrawal & { user: User })[]>;
   getUserWithdrawals(userId: number): Promise<Withdrawal[]>;
+  getWithdrawal(id: number): Promise<Withdrawal | undefined>;
   getWithdrawalByInpayOutTradeNo(reference: string): Promise<Withdrawal | undefined>;
+  claimPpayProsWithdrawal(id: number, merchantOrderNo: string): Promise<Withdrawal | undefined>;
+  releasePpayProsWithdrawal(id: number, merchantOrderNo: string): Promise<Withdrawal | undefined>;
   updateWithdrawal(id: number, data: Partial<Withdrawal>): Promise<Withdrawal>;
   claimWithdrawalFinalization(id: number, status: "approved" | "rejected"): Promise<Withdrawal | undefined>;
   getUserWithdrawalCountToday(userId: number): Promise<number>;
@@ -575,6 +579,18 @@ export class DatabaseStorage implements IStorage {
     return deposit;
   }
 
+  async claimDepositRejection(id: number): Promise<Deposit | undefined> {
+    const [deposit] = await db.update(deposits)
+      .set({ status: "rejected", processedAt: new Date() })
+      .where(and(
+        eq(deposits.id, id),
+        sql`${deposits.status} NOT IN ('approved', 'rejected')`,
+        isNull(deposits.processedAt),
+      ))
+      .returning();
+    return deposit;
+  }
+
   async claimAdminDepositApproval(id: number, processedBy: number): Promise<Deposit | undefined> {
     const [deposit] = await db.update(deposits)
       .set({ status: "approved", processedAt: new Date(), processedBy })
@@ -770,8 +786,37 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(withdrawals).where(eq(withdrawals.userId, userId)).orderBy(desc(withdrawals.createdAt));
   }
 
+  async getWithdrawal(id: number): Promise<Withdrawal | undefined> {
+    const [withdrawal] = await db.select().from(withdrawals).where(eq(withdrawals.id, id));
+    return withdrawal;
+  }
+
   async getWithdrawalByInpayOutTradeNo(reference: string): Promise<Withdrawal | undefined> {
     const [withdrawal] = await db.select().from(withdrawals).where(eq(withdrawals.inpayOutTradeNo, reference));
+    return withdrawal;
+  }
+
+  async claimPpayProsWithdrawal(id: number, merchantOrderNo: string): Promise<Withdrawal | undefined> {
+    const [withdrawal] = await db.update(withdrawals)
+      .set({ status: "processing", omnipayReference: merchantOrderNo, omnipayId: null })
+      .where(and(
+        eq(withdrawals.id, id),
+        eq(withdrawals.status, "pending"),
+        isNull(withdrawals.omnipayReference),
+      ))
+      .returning();
+    return withdrawal;
+  }
+
+  async releasePpayProsWithdrawal(id: number, merchantOrderNo: string): Promise<Withdrawal | undefined> {
+    const [withdrawal] = await db.update(withdrawals)
+      .set({ status: "pending", omnipayReference: null, omnipayId: null })
+      .where(and(
+        eq(withdrawals.id, id),
+        eq(withdrawals.status, "processing"),
+        eq(withdrawals.omnipayReference, merchantOrderNo),
+      ))
+      .returning();
     return withdrawal;
   }
 

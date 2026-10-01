@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import session from "express-session";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
-import { registerSchema, loginSchema, depositSchema, walletSchema, phoneNumberSchema } from "@shared/schema";
+import { registerSchema, loginSchema, depositSchema, walletSchema, phoneNumberSchema, type Withdrawal } from "@shared/schema";
 import { z } from "zod";
 import ConnectPgSimple from "connect-pg-simple";
 import { 
@@ -25,6 +25,18 @@ import {
   getCurrency as sendavapayGetCurrency,
   toSendavapayCountry,
 } from "./sendavapay";
+import {
+  createPpayProsMerchantOrderNo,
+  createPpayProsPayin,
+  createPpayProsPayout,
+  formatPpayProsBeninPhone,
+  getPpayProsCredentials,
+  parsePpayProsMerchantOrderNo,
+  PpayProsApiError,
+  queryPpayProsPayout,
+  toPpayProsAmount,
+  verifyPpayProsSignature,
+} from "./ppaypros";
 import {
   buildPaymentUrl as westpayBuildUrl,
   verifyWebhookSignature as westpayVerifySignature,
@@ -85,6 +97,58 @@ function getPublicBaseUrl(req: Request): string {
     .split(",")[0]
     .trim();
   return `${forwardedProto}://${req.get("host")}`;
+}
+
+function ppayProsCallbackPayload(req: Request): Record<string, unknown> {
+  const combined = {
+    ...(req.query as Record<string, unknown>),
+    ...((req.body && typeof req.body === "object" ? req.body : {}) as Record<string, unknown>),
+  };
+  return Object.fromEntries(
+    Object.entries(combined)
+      .filter(([, value]) => typeof value === "string" || typeof value === "number")
+      .map(([key, value]) => [key, String(value)]),
+  );
+}
+
+async function reconcilePpayProsPayout(
+  withdrawal: Withdrawal,
+  merchantOrderNo: string,
+  stateValue: unknown,
+  transferId?: string,
+): Promise<Withdrawal | undefined> {
+  if (withdrawal.omnipayReference !== merchantOrderNo) {
+    throw new Error("Référence PPayPros différente de celle du retrait.");
+  }
+  if (withdrawal.status === "approved" || withdrawal.status === "rejected") return withdrawal;
+
+  const state = Number(stateValue);
+  if (state === 0 || state === 1) {
+    return storage.updateWithdrawal(withdrawal.id, {
+      status: "processing",
+      ...(transferId ? { omnipayId: transferId } : {}),
+    });
+  }
+  if (state !== 2 && state !== 3 && state !== 4) {
+    throw new Error("État de virement PPayPros inconnu.");
+  }
+
+  const terminalStatus = state === 2 ? "approved" : "rejected";
+  const finalized = await storage.claimWithdrawalFinalization(withdrawal.id, terminalStatus);
+  if (!finalized) return await storage.getWithdrawal(withdrawal.id);
+
+  let updated = finalized;
+  if (transferId) {
+    updated = await storage.updateWithdrawal(withdrawal.id, { omnipayId: transferId });
+  }
+  if (terminalStatus === "rejected") {
+    const user = await storage.getUser(withdrawal.userId);
+    if (user) {
+      const refundedBalance = parseFloat(user.balance) + withdrawal.amount;
+      await storage.updateUser(user.id, { balance: refundedBalance.toFixed(2) });
+    }
+  }
+  return updated;
 }
 
 function checkBruteForce(req: Request, res: Response): boolean {
@@ -286,6 +350,7 @@ const PUBLIC_SETTING_KEYS = new Set([
   "level1Commission", "level2Commission", "level3Commission",
   "sendavapayEnabled", "sendavapayChannelName",
   "westpayEnabled", "westpayChannelName", "westpayCountries",
+  "ppayprosPayinEnabled", "ppayprosPayoutEnabled",
   "ashtechEnabled", "ashtechChannelName", "ashtechCountries",
   "inpayEnabled", "inpayChannelName", "inpayCountries",
 ]);
@@ -1017,7 +1082,7 @@ export async function registerRoutes(
   // Deposits
   app.post("/api/deposits", requireAuth, async (req, res) => {
     try {
-      const { amount, accountName, accountNumber, paymentMethod, country, paymentChannelId, useSoleaspay, useWestpay, useInpay, inpayPhone, otpCode,
+      const { amount, accountName, accountNumber, paymentMethod, country, paymentChannelId, useSoleaspay, useWestpay, usePpaypros, useInpay, inpayPhone, otpCode,
         paymentNumberId, channelName, screenshot, paymentMessage, reference, feePaymentId } = req.body;
       const user = await storage.getUser(req.session.userId!);
       
@@ -1175,6 +1240,82 @@ export async function registerRoutes(
         } catch (westpayError: any) {
           console.error("[westpay] deposit error:", westpayError);
           return res.status(400).json({ message: westpayError.message || "Erreur WestPay", westpay: true });
+        }
+      }
+
+      // ── PPayPros: Benin hosted checkout, outside the RobotPay page ─────────
+      if (usePpaypros === true) {
+        if (settings.ppayprosPayinEnabled !== "true") {
+          return res.status(403).json({ message: "Le dépôt PPayPros est désactivé.", ppaypros: true });
+        }
+        if (normalizedDeposit.country.toUpperCase() !== "BJ") {
+          return res.status(400).json({ message: "PPayPros est activé uniquement pour le Bénin.", ppaypros: true });
+        }
+        let ppayProsDepositId: number | null = null;
+        try {
+          const customerPhone = formatPpayProsBeninPhone(normalizedDeposit.accountNumber);
+          const deposit = await storage.createDeposit({
+            userId: user.id,
+            amount: normalizedDeposit.amount,
+            accountName: normalizedDeposit.accountName || user.fullName,
+            accountNumber: customerPhone,
+            country: "BJ",
+            paymentMethod: "PPayPros",
+            paymentChannelId: normalizedDeposit.paymentChannelId && normalizedDeposit.paymentChannelId > 0
+              ? normalizedDeposit.paymentChannelId
+              : null,
+            status: "pending",
+            withdrawalFeePaymentId: withdrawalFeePayment?.id,
+          });
+          ppayProsDepositId = deposit.id;
+          const merchantOrderNo = createPpayProsMerchantOrderNo("payin", deposit.id);
+          await storage.updateDeposit(deposit.id, { omnipayReference: merchantOrderNo });
+          const baseUrl = getPublicBaseUrl(req);
+          const payment = await createPpayProsPayin({
+            merchantOrderNo,
+            amountXof: normalizedDeposit.amount,
+            customerName: normalizedDeposit.accountName || user.fullName,
+            customerPhone,
+            customerEmail: `user${user.id}@tonnew.app`,
+            notifyUrl: `${baseUrl}/api/webhooks/ppaypros/payin`,
+            returnUrl: `${baseUrl}/api/ppaypros/return?depositId=${deposit.id}`,
+          });
+          const payData = typeof payment.payData === "string" ? payment.payData : "";
+          if (payment.payDataType !== "payUrl" || !payData) {
+            await storage.updateDeposit(deposit.id, { status: "rejected", processedAt: new Date() });
+            return res.status(502).json({
+              message: "PPayPros n'a pas renvoyé de lien de paiement pour ce dépôt.",
+              ppaypros: true,
+            });
+          }
+          let checkoutUrl: URL;
+          try {
+            checkoutUrl = new URL(payData);
+          } catch {
+            await storage.updateDeposit(deposit.id, { status: "rejected", processedAt: new Date() });
+            return res.status(502).json({ message: "PPayPros a renvoyé un lien de paiement invalide.", ppaypros: true });
+          }
+          if (checkoutUrl.protocol !== "https:") {
+            await storage.updateDeposit(deposit.id, { status: "rejected", processedAt: new Date() });
+            return res.status(502).json({ message: "PPayPros a renvoyé un lien non sécurisé.", ppaypros: true });
+          }
+          await storage.updateDeposit(deposit.id, {
+            omnipayId: payment.payOrderId ? String(payment.payOrderId) : null,
+          });
+          return res.json({ deposit, ppayprosUrl: checkoutUrl.toString(), ppaypros: true });
+        } catch (ppayProsError: any) {
+          if (ppayProsError instanceof PpayProsApiError && ppayProsError.providerRejected) {
+            // A provider-declared rejection is definitive; transport errors remain pending
+            // so a late notification can still be reconciled safely.
+            if (ppayProsDepositId !== null) {
+              await storage.claimDepositRejection(ppayProsDepositId);
+            }
+          }
+          console.error("[ppaypros] payin error:", ppayProsError.message);
+          return res.status(400).json({
+            message: ppayProsError.message || "Erreur PPayPros",
+            ppaypros: true,
+          });
         }
       }
 
@@ -2018,6 +2159,102 @@ export async function registerRoutes(
     }
   );
 
+  // PPayPros returns the customer to the app, but only the signed notify callback
+  // can approve a deposit.
+  app.get("/api/ppaypros/return", (req, res) => {
+    const depositId = Number(req.query.depositId);
+    const suffix = Number.isSafeInteger(depositId) && depositId > 0
+      ? `&ppaypros_depositId=${depositId}`
+      : "";
+    res.redirect(`${getPublicBaseUrl(req)}/deposit?ppaypros_status=returned${suffix}`);
+  });
+
+  app.post("/api/webhooks/ppaypros/payin", async (req, res) => {
+    try {
+      const credentials = getPpayProsCredentials();
+      const payload = ppayProsCallbackPayload(req);
+      if (
+        payload.mchNo !== credentials.merchantNo ||
+        payload.appId !== credentials.appId ||
+        !verifyPpayProsSignature(payload, payload.sign, credentials.privateKey)
+      ) {
+        return res.status(401).type("text/plain").send("invalid signature");
+      }
+
+      const merchantOrderNo = String(payload.mchOrderNo || "");
+      const depositId = parsePpayProsMerchantOrderNo("payin", merchantOrderNo);
+      if (!depositId) return res.status(400).type("text/plain").send("invalid order");
+
+      const deposit = await storage.getDeposit(depositId);
+      if (
+        !deposit ||
+        deposit.paymentMethod !== "PPayPros" ||
+        deposit.country.toUpperCase() !== "BJ" ||
+        deposit.omnipayReference !== merchantOrderNo
+      ) {
+        return res.status(404).type("text/plain").send("deposit not found");
+      }
+      if (Number(payload.amount) !== toPpayProsAmount(deposit.amount)) {
+        return res.status(400).type("text/plain").send("amount mismatch");
+      }
+      if (deposit.status === "approved" || deposit.status === "rejected") {
+        return res.type("text/plain").send("success");
+      }
+
+      const state = Number(payload.state);
+      if (state === 2) {
+        const claimedDeposit = await storage.claimDepositApproval(deposit.id);
+        if (claimedDeposit) await creditApprovedDeposit(claimedDeposit);
+      } else if (state === 3) {
+        await storage.claimDepositRejection(deposit.id);
+      }
+      return res.type("text/plain").send("success");
+    } catch (error: any) {
+      console.error("[ppaypros] payin callback error:", error.message);
+      return res.status(500).type("text/plain").send("failed");
+    }
+  });
+
+  app.post("/api/webhooks/ppaypros/payout", async (req, res) => {
+    try {
+      const credentials = getPpayProsCredentials();
+      const payload = ppayProsCallbackPayload(req);
+      if (
+        payload.mchNo !== credentials.merchantNo ||
+        payload.appId !== credentials.appId ||
+        !verifyPpayProsSignature(payload, payload.sign, credentials.privateKey)
+      ) {
+        return res.status(401).type("text/plain").send("invalid signature");
+      }
+
+      const merchantOrderNo = String(payload.mchOrderNo || "");
+      const withdrawalId = parsePpayProsMerchantOrderNo("payout", merchantOrderNo);
+      if (!withdrawalId) return res.status(400).type("text/plain").send("invalid order");
+      const withdrawal = await storage.getWithdrawal(withdrawalId);
+      if (
+        !withdrawal ||
+        withdrawal.country.toUpperCase() !== "BJ" ||
+        withdrawal.omnipayReference !== merchantOrderNo
+      ) {
+        return res.status(404).type("text/plain").send("withdrawal not found");
+      }
+      if (Number(payload.amount) !== toPpayProsAmount(withdrawal.netAmount)) {
+        return res.status(400).type("text/plain").send("amount mismatch");
+      }
+
+      await reconcilePpayProsPayout(
+        withdrawal,
+        merchantOrderNo,
+        payload.state,
+        payload.transferId ? String(payload.transferId) : undefined,
+      );
+      return res.type("text/plain").send("success");
+    } catch (error: any) {
+      console.error("[ppaypros] payout callback error:", error.message);
+      return res.status(500).type("text/plain").send("failed");
+    }
+  });
+
   // ── InPay webhooks (POST application/x-www-form-urlencoded, MD5 signature) ──
   app.post("/api/webhooks/inpay", async (req, res) => {
     try {
@@ -2680,6 +2917,119 @@ export async function registerRoutes(
       });
       console.error("[inpay] payout error:", error);
       res.status(400).json({ message: error.message || "Erreur d'envoi InPay" });
+    }
+  });
+
+  app.post("/api/admin/withdrawals/:id/ppaypros", requireAdmin, async (req, res) => {
+    const withdrawalId = parseInt(getRouteParam(req.params.id), 10);
+    try {
+      const withdrawal = await storage.getWithdrawal(withdrawalId);
+      if (!withdrawal) return res.status(404).json({ message: "Retrait non trouvé" });
+      if (withdrawal.status !== "pending") {
+        return res.status(409).json({ message: "Ce retrait a déjà été traité ou envoyé." });
+      }
+      const settings = await storage.getSettings();
+      if (settings.ppayprosPayoutEnabled !== "true") {
+        return res.status(403).json({ message: "Les retraits PPayPros sont désactivés dans les paramètres." });
+      }
+      if (withdrawal.country.trim().toUpperCase() !== "BJ") {
+        return res.status(400).json({ message: "PPayPros est activé uniquement pour les retraits du Bénin." });
+      }
+
+      // Validate configuration and the Benin phone before claiming the withdrawal.
+      getPpayProsCredentials();
+      const accountPhone = formatPpayProsBeninPhone(withdrawal.accountNumber);
+      const amount = toPpayProsAmount(withdrawal.netAmount);
+      const merchantOrderNo = createPpayProsMerchantOrderNo("payout", withdrawal.id);
+      const claimed = await storage.claimPpayProsWithdrawal(withdrawal.id, merchantOrderNo);
+      if (!claimed) {
+        return res.status(409).json({ message: "Ce retrait est déjà en cours de traitement." });
+      }
+
+      try {
+        const result = await createPpayProsPayout({
+          merchantOrderNo,
+          amountXof: withdrawal.netAmount,
+          accountName: withdrawal.accountName,
+          accountNumber: accountPhone,
+          accountPhone,
+          accountEmail: `user${withdrawal.userId}@tonnew.app`,
+          notifyUrl: `${getPublicBaseUrl(req)}/api/webhooks/ppaypros/payout`,
+        });
+        if (result.mchOrderNo && String(result.mchOrderNo) !== merchantOrderNo) {
+          throw new Error("PPayPros a renvoyé une référence de retrait différente.");
+        }
+
+        const transferId = result.transferId ? String(result.transferId) : undefined;
+        if (transferId) {
+          await storage.updateWithdrawal(withdrawal.id, { omnipayId: transferId });
+        }
+        let updated = await storage.getWithdrawal(withdrawal.id);
+        if (updated && result.state !== undefined && result.state !== null) {
+          updated = await reconcilePpayProsPayout(updated, merchantOrderNo, result.state, transferId) || updated;
+        }
+        await storage.logAdminAction(
+          req.session.userId!,
+          "send_withdrawal_to_ppaypros",
+          withdrawal.userId,
+          `Retrait ${withdrawal.id} envoyé à PPayPros (Bénin)`,
+        );
+        return res.json(updated);
+      } catch (error: any) {
+        if (error instanceof PpayProsApiError && error.providerRejected) {
+          await storage.releasePpayProsWithdrawal(withdrawal.id, merchantOrderNo);
+        }
+        console.error("[ppaypros] payout error:", error.message);
+        return res.status(502).json({
+          message: error.message || "Erreur d'envoi PPayPros",
+          statusCheckRequired: !(error instanceof PpayProsApiError && error.providerRejected),
+        });
+      }
+    } catch (error: any) {
+      console.error("[ppaypros] payout setup error:", error.message);
+      return res.status(400).json({ message: error.message || "Erreur de configuration PPayPros" });
+    }
+  });
+
+  app.post("/api/admin/withdrawals/:id/ppaypros/status", requireAdmin, async (req, res) => {
+    const withdrawalId = parseInt(getRouteParam(req.params.id), 10);
+    try {
+      const withdrawal = await storage.getWithdrawal(withdrawalId);
+      if (!withdrawal) return res.status(404).json({ message: "Retrait non trouvé" });
+      const merchantOrderNo = createPpayProsMerchantOrderNo("payout", withdrawal.id);
+      if (
+        withdrawal.country.trim().toUpperCase() !== "BJ" ||
+        withdrawal.omnipayReference !== merchantOrderNo
+      ) {
+        return res.status(400).json({ message: "Ce retrait ne possède pas de référence PPayPros." });
+      }
+      if (withdrawal.status === "approved" || withdrawal.status === "rejected") {
+        return res.json(withdrawal);
+      }
+
+      const result = await queryPpayProsPayout({
+        merchantOrderNo,
+        transferId: withdrawal.omnipayId,
+      });
+      if (result.mchOrderNo && String(result.mchOrderNo) !== merchantOrderNo) {
+        return res.status(502).json({ message: "PPayPros a renvoyé une autre référence de retrait." });
+      }
+      if (
+        result.amount !== undefined &&
+        Number(result.amount) !== toPpayProsAmount(withdrawal.netAmount)
+      ) {
+        return res.status(502).json({ message: "Le montant retourné par PPayPros ne correspond pas au retrait." });
+      }
+      const updated = await reconcilePpayProsPayout(
+        withdrawal,
+        merchantOrderNo,
+        result.state,
+        result.transferId ? String(result.transferId) : undefined,
+      );
+      return res.json(updated);
+    } catch (error: any) {
+      console.error("[ppaypros] payout status error:", error.message);
+      return res.status(502).json({ message: error.message || "Impossible de vérifier le statut PPayPros." });
     }
   });
 
