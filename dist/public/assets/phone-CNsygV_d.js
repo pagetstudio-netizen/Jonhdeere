@@ -1,0 +1,1 @@
+function i(e){if(typeof e!="string"&&typeof e!="number")return null;let t=String(e).replace(/\D/g,"");return t.startsWith("00229")?t=t.slice(5):t.startsWith("229")&&(t=t.slice(3)),/^\d{8}$/.test(t)?`01${t}`:/^01\d{8}$/.test(t)?t:null}export{i as n};

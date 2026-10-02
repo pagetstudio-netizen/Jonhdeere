@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { normalizeBeninPhone } from "@shared/phone";
 
 const PPAYPROS_API_BASE = "https://pay.ppaypros.com";
 const PPAYPROS_AMOUNT_SCALE = 100;
@@ -84,12 +85,11 @@ export function toPpayProsAmount(amountXof: number): number {
 }
 
 export function formatPpayProsBeninPhone(phone: string): string {
-  let digits = String(phone || "").replace(/\D/g, "");
-  if (digits.startsWith("229")) digits = digits.slice(3);
-  if (!/^01\d{8}$/.test(digits)) {
+  const normalized = normalizeBeninPhone(phone);
+  if (!normalized) {
     throw new Error("Le numéro du Bénin doit commencer par 01 et contenir 10 chiffres.");
   }
-  return digits;
+  return normalized;
 }
 
 export function createPpayProsMerchantOrderNo(kind: "payin" | "payout", recordId: number): string {

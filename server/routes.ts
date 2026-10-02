@@ -4,6 +4,7 @@ import session from "express-session";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import { registerSchema, loginSchema, depositSchema, walletSchema, phoneNumberSchema, type Withdrawal } from "@shared/schema";
+import { normalizeBeninPhone } from "@shared/phone";
 import { z } from "zod";
 import ConnectPgSimple from "connect-pg-simple";
 import { 
@@ -343,7 +344,7 @@ const PUBLIC_SETTING_KEYS = new Set([
   "supportLink", "supportType", "supportLabel",
   "support2Link", "support2Type", "support2Label",
   "channelLink", "channelType", "channelLabel",
-  "groupLink", "groupType", "groupLabel", "noticeText",
+  "groupLink", "groupType", "groupLabel", "noticeText", "popupButtonLabel",
   "supportEnabled", "support2Enabled", "channelEnabled", "groupEnabled",
   "signupBonus", "minDeposit", "minWithdrawal", "withdrawalFees",
   "maxWithdrawalsPerDay", "withdrawalStartHour", "withdrawalEndHour",
@@ -461,11 +462,41 @@ export async function registerRoutes(
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const data = registerSchema.parse(req.body);
-      
-      const existing = await storage.getUserByPhone(data.phone, data.country);
-      if (existing) {
-        return res.status(400).json({ message: "Ce numéro est déjà utilisé" });
+      const requestBody = req.body && typeof req.body === "object"
+        ? req.body as Record<string, unknown>
+        : {};
+      const country = typeof requestBody.country === "string"
+        ? requestBody.country.trim().toUpperCase()
+        : requestBody.country;
+      const beninRegistration = country === "BJ";
+      const normalizedPhone = beninRegistration
+        ? normalizeBeninPhone(requestBody.phone)
+        : requestBody.phone;
+      if (beninRegistration && !normalizedPhone) {
+        return res.status(400).json({
+          message: "Numéro béninois invalide : saisissez 8 chiffres locaux ou 01 suivi de 8 chiffres.",
+        });
+      }
+      const data = registerSchema.parse({ ...requestBody, country, phone: normalizedPhone });
+
+      const phoneCandidates = new Set([data.phone]);
+      if (data.country === "BJ") {
+        const localDigits = data.phone.startsWith("01") ? data.phone.slice(2) : data.phone;
+        for (const candidate of [
+          localDigits,
+          `229${data.phone}`,
+          `+229${data.phone}`,
+          `229${localDigits}`,
+          `+229${localDigits}`,
+        ]) {
+          phoneCandidates.add(candidate);
+        }
+      }
+      for (const candidate of Array.from(phoneCandidates)) {
+        const existing = await storage.getUserByPhone(candidate, data.country);
+        if (existing) {
+          return res.status(400).json({ message: "Ce numéro est déjà utilisé" });
+        }
       }
 
       let referredBy: string | undefined;
@@ -500,15 +531,40 @@ export async function registerRoutes(
     if (checkBruteForce(req, res)) return;
     try {
       const data = loginSchema.parse(req.body);
-      
-      let user = await storage.getUserByPhone(data.phone, data.country);
+      const country = data.country.toUpperCase();
+      const phoneCandidates = new Set([data.phone]);
+      if (country === "BJ") {
+        const normalizedPhone = normalizeBeninPhone(data.phone);
+        if (normalizedPhone) {
+          const localDigits = normalizedPhone.slice(2);
+          for (const candidate of [
+            normalizedPhone,
+            localDigits,
+            `229${normalizedPhone}`,
+            `+229${normalizedPhone}`,
+            `229${localDigits}`,
+            `+229${localDigits}`,
+          ]) {
+            phoneCandidates.add(candidate);
+          }
+        }
+      }
+
+      let user;
+      for (const phone of Array.from(phoneCandidates)) {
+        user = await storage.getUserByPhone(phone, country);
+        if (user) break;
+      }
 
       // Administrators may select any country at login. Regular users must
       // still authenticate with the country saved on their account.
       if (!user) {
-        const adminCandidate = await storage.getUserByPhoneAnyCountry(data.phone);
-        if (adminCandidate?.isAdmin) {
-          user = adminCandidate;
+        for (const phone of Array.from(phoneCandidates)) {
+          const adminCandidate = await storage.getUserByPhoneAnyCountry(phone);
+          if (adminCandidate?.isAdmin) {
+            user = adminCandidate;
+            break;
+          }
         }
       }
 
@@ -1251,9 +1307,12 @@ export async function registerRoutes(
         if (normalizedDeposit.country.toUpperCase() !== "BJ") {
           return res.status(400).json({ message: "PPayPros est activé uniquement pour le Bénin.", ppaypros: true });
         }
+        if (user.country.toUpperCase() !== "BJ") {
+          return res.status(400).json({ message: "PPayPros utilise le numéro béninois enregistré sur le compte.", ppaypros: true });
+        }
         let ppayProsDepositId: number | null = null;
         try {
-          const customerPhone = formatPpayProsBeninPhone(normalizedDeposit.accountNumber);
+          const customerPhone = formatPpayProsBeninPhone(user.phone);
           const deposit = await storage.createDeposit({
             userId: user.id,
             amount: normalizedDeposit.amount,
@@ -2643,6 +2702,9 @@ export async function registerRoutes(
         support2Type: settings.support2Type || "telegram",
         channelType: settings.channelType || "telegram",
         groupType: settings.groupType || "telegram",
+        supportEnabled: settings.supportEnabled !== "false",
+        channelEnabled: settings.channelEnabled !== "false",
+        groupEnabled: settings.groupEnabled !== "false",
         supportLabel: settings.supportLabel || "Service client",
         support2Label: settings.support2Label || "Service client 2",
         channelLabel: settings.channelLabel || "Chaîne officielle",

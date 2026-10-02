@@ -10,6 +10,7 @@ import {
 import { Link, useLocation } from "wouter";
 import type { ApiCountry } from "@/lib/countries";
 import type { PaymentNumber } from "@shared/schema";
+import { normalizeBeninPhone } from "@shared/phone";
 import historyIcon from "@assets/20260410_193219_1787363717022.png";
 import depositBrandMark from "@assets/téléchargement_-_2026-09-29T140846.267_1790693223891.png";
 import bankCardIcon from "@assets/bankCard-CnRlNHo8_(1)_1790705182033.png";
@@ -47,14 +48,6 @@ interface AshtechCountry {
   operators: (string | { name?: string; code?: string; id?: string })[];
 }
 
-function normalizePpayProsBeninPhoneInput(value: string): string | null {
-  const digits = value.replace(/\D/g, "");
-  const localNumber = digits.startsWith("229") ? digits.slice(3) : digits;
-  if (/^\d{8}$/.test(localNumber)) return `01${localNumber}`;
-  if (/^01\d{8}$/.test(localNumber)) return localNumber;
-  return null;
-}
-
 export default function DepositPage() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
@@ -68,7 +61,6 @@ export default function DepositPage() {
 
   const [amount, setAmount] = useState<number | "">("");
   const [depositCountry, setDepositCountry] = useState("");
-  const [ppayprosPhone, setPpayprosPhone] = useState("");
   const [senderPhone, setSenderPhone] = useState(user?.phone || "");
   const [screenshot, setScreenshot] = useState<string>("");
   const [screenshotName, setScreenshotName] = useState("");
@@ -372,8 +364,13 @@ export default function DepositPage() {
 
   const ppayprosInitiateMutation = useMutation({
     mutationFn: async () => {
-      const customerPhone = normalizePpayProsBeninPhoneInput(ppayprosPhone);
-      if (!customerPhone) throw new Error("Saisissez un numéro béninois de 8 chiffres, ou au format 01 + 8 chiffres.");
+      if (user?.country?.toUpperCase() !== "BJ") {
+        throw new Error("PPayPros nécessite un compte enregistré au Bénin.");
+      }
+      const customerPhone = normalizeBeninPhone(user?.phone);
+      if (!customerPhone) {
+        throw new Error("Le numéro béninois enregistré sur votre compte est invalide. Les 8 chiffres locaux sont complétés avec 01.");
+      }
       const res = await apiRequest("POST", "/api/deposits", {
         amount: Number(amount),
         accountName: user?.fullName || "",
@@ -622,10 +619,18 @@ export default function DepositPage() {
       return;
     }
     if (ppayprosAvailable) {
-      if (!normalizePpayProsBeninPhoneInput(ppayprosPhone)) {
+      if (user?.country?.toUpperCase() !== "BJ") {
         toast({
-          title: "Numéro béninois invalide",
-          description: "Saisissez les 8 chiffres de votre numéro béninois; le préfixe 01 sera ajouté. Vous pouvez aussi saisir le format complet +229 01…",
+          title: "Compte non béninois",
+          description: "PPayPros utilise le numéro béninois enregistré sur le compte.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!normalizeBeninPhone(user?.phone)) {
+        toast({
+          title: "Numéro du compte invalide",
+          description: "Le numéro enregistré doit être un numéro béninois; les 8 chiffres locaux sont complétés automatiquement avec 01.",
           variant: "destructive",
         });
         return;
@@ -1012,7 +1017,6 @@ export default function DepositPage() {
             value={depositCountry}
             onChange={(event) => {
               setDepositCountry(event.target.value);
-              if (event.target.value.toUpperCase() !== "BJ") setPpayprosPhone("");
             }}
             className="country-select"
           >
@@ -1024,26 +1028,9 @@ export default function DepositPage() {
         </section>
 
         {ppayprosAvailable && (
-          <section className="country-panel" aria-label="Numéro béninois pour le paiement PPayPros">
-            <label htmlFor="ppaypros-phone" className="country-label">
-              Numéro mobile béninois pour le paiement
-            </label>
-            <input
-              id="ppaypros-phone"
-              type="tel"
-              inputMode="numeric"
-              autoComplete="off"
-              maxLength={22}
-              value={ppayprosPhone}
-              onChange={(event) => setPpayprosPhone(event.target.value)}
-              className="country-select"
-              placeholder="01 00 00 00 00"
-              aria-describedby="ppaypros-phone-hint"
-            />
-            <p id="ppaypros-phone-hint" className="mt-2 text-sm text-muted-foreground">
-              Entrez les 8 chiffres de votre numéro béninois; le préfixe 01 est ajouté automatiquement. +229 est facultatif.
-            </p>
-          </section>
+          <p className="text-sm text-muted-foreground">
+            Le numéro de téléphone de votre compte sera utilisé pour créer le paiement PPayPros.
+          </p>
         )}
 
         <button

@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import BottomNav from "@/components/bottom-nav";
+import HomeWelcomePopup from "@/components/home-welcome-popup";
 import { ADMIN_PATH } from "@/lib/admin-path";
 
 const LoginPage = lazy(() => import("@/pages/login"));
@@ -135,11 +136,21 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function AppLayout({ children }: { children: React.ReactNode }) {
+function AppLayout({
+  children,
+  reserveBottomNavSpace = true,
+}: {
+  children: React.ReactNode;
+  reserveBottomNavSpace?: boolean;
+}) {
   return (
     <div
       className="min-h-screen bg-background"
-      style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom, 0px))" }}
+      style={{
+        paddingBottom: reserveBottomNavSpace
+          ? "calc(80px + env(safe-area-inset-bottom, 0px))"
+          : 0,
+      }}
     >
       {children}
       <BottomNav />
@@ -278,7 +289,9 @@ function Router() {
       </Route>
       <Route path="/service">
         <ProtectedRoute>
-          <ServicePage />
+          <AppLayout reserveBottomNavSpace={false}>
+            <ServicePage />
+          </AppLayout>
         </ProtectedRoute>
       </Route>
       <Route path="/wallet">
@@ -359,6 +372,7 @@ function App() {
             <Suspense fallback={<DelayedPageLoading />}>
               <Router />
             </Suspense>
+            <HomeWelcomePopup />
             <Toaster />
           </BrandThemeScope>
         </AuthProvider>
