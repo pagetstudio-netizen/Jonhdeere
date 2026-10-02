@@ -60,6 +60,7 @@ export default function DepositPage() {
 
   const [amount, setAmount] = useState<number | "">("");
   const [depositCountry, setDepositCountry] = useState("");
+  const [ppayprosPhone, setPpayprosPhone] = useState("");
   const [senderPhone, setSenderPhone] = useState(user?.phone || "");
   const [screenshot, setScreenshot] = useState<string>("");
   const [screenshotName, setScreenshotName] = useState("");
@@ -366,7 +367,7 @@ export default function DepositPage() {
       const res = await apiRequest("POST", "/api/deposits", {
         amount: Number(amount),
         accountName: user?.fullName || "",
-        accountNumber: user?.phone || "",
+        accountNumber: ppayprosPhone.trim(),
         paymentMethod: "PPayPros",
         country,
         usePpaypros: true,
@@ -602,6 +603,16 @@ export default function DepositPage() {
       return;
     }
     if (ppayprosAvailable) {
+      const digits = ppayprosPhone.replace(/\D/g, "");
+      const localNumber = digits.startsWith("229") ? digits.slice(3) : digits;
+      if (!/^01\d{8}$/.test(localNumber)) {
+        toast({
+          title: "Numéro béninois invalide",
+          description: "Saisissez un numéro commençant par 01 et comportant 10 chiffres, ou son format international +229.",
+          variant: "destructive",
+        });
+        return;
+      }
       ppayprosInitiateMutation.mutate();
       return;
     }
@@ -982,7 +993,10 @@ export default function DepositPage() {
           <select
             id="deposit-country"
             value={depositCountry}
-            onChange={(event) => setDepositCountry(event.target.value)}
+            onChange={(event) => {
+              setDepositCountry(event.target.value);
+              if (event.target.value.toUpperCase() !== "BJ") setPpayprosPhone("");
+            }}
             className="country-select"
           >
             <option value="">Sélectionnez un pays</option>
@@ -991,6 +1005,29 @@ export default function DepositPage() {
             ))}
           </select>
         </section>
+
+        {ppayprosAvailable && (
+          <section className="country-panel" aria-label="Numéro béninois pour le paiement PPayPros">
+            <label htmlFor="ppaypros-phone" className="country-label">
+              Numéro mobile béninois pour le paiement
+            </label>
+            <input
+              id="ppaypros-phone"
+              type="tel"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={18}
+              value={ppayprosPhone}
+              onChange={(event) => setPpayprosPhone(event.target.value)}
+              className="country-select"
+              placeholder="01 00 00 00 00"
+              aria-describedby="ppaypros-phone-hint"
+            />
+            <p id="ppaypros-phone-hint" className="mt-2 text-sm text-muted-foreground">
+              Utilisez le numéro qui recevra la demande de paiement (01 + 8 chiffres).
+            </p>
+          </section>
+        )}
 
         <button
           className="continue"
