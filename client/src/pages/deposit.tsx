@@ -367,7 +367,7 @@ export default function DepositPage() {
       const res = await apiRequest("POST", "/api/deposits", {
         amount: Number(amount),
         accountName: user?.fullName || "",
-        accountNumber: ppayprosPhone.trim(),
+        accountNumber: ppayprosPhone.replace(/\D/g, ""),
         paymentMethod: "PPayPros",
         country,
         usePpaypros: true,
