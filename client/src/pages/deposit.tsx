@@ -47,6 +47,14 @@ interface AshtechCountry {
   operators: (string | { name?: string; code?: string; id?: string })[];
 }
 
+function normalizePpayProsBeninPhoneInput(value: string): string | null {
+  const digits = value.replace(/\D/g, "");
+  const localNumber = digits.startsWith("229") ? digits.slice(3) : digits;
+  if (/^\d{8}$/.test(localNumber)) return `01${localNumber}`;
+  if (/^01\d{8}$/.test(localNumber)) return localNumber;
+  return null;
+}
+
 export default function DepositPage() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
@@ -364,10 +372,12 @@ export default function DepositPage() {
 
   const ppayprosInitiateMutation = useMutation({
     mutationFn: async () => {
+      const customerPhone = normalizePpayProsBeninPhoneInput(ppayprosPhone);
+      if (!customerPhone) throw new Error("Saisissez un numéro béninois de 8 chiffres, ou au format 01 + 8 chiffres.");
       const res = await apiRequest("POST", "/api/deposits", {
         amount: Number(amount),
         accountName: user?.fullName || "",
-        accountNumber: ppayprosPhone.replace(/\D/g, ""),
+        accountNumber: customerPhone,
         paymentMethod: "PPayPros",
         country,
         usePpaypros: true,
@@ -603,12 +613,10 @@ export default function DepositPage() {
       return;
     }
     if (ppayprosAvailable) {
-      const digits = ppayprosPhone.replace(/\D/g, "");
-      const localNumber = digits.startsWith("229") ? digits.slice(3) : digits;
-      if (!/^01\d{8}$/.test(localNumber)) {
+      if (!normalizePpayProsBeninPhoneInput(ppayprosPhone)) {
         toast({
           title: "Numéro béninois invalide",
-          description: "Saisissez un numéro commençant par 01 et comportant 10 chiffres, ou son format international +229.",
+          description: "Saisissez les 8 chiffres de votre numéro béninois; le préfixe 01 sera ajouté. Vous pouvez aussi saisir le format complet +229 01…",
           variant: "destructive",
         });
         return;
@@ -1024,7 +1032,7 @@ export default function DepositPage() {
               aria-describedby="ppaypros-phone-hint"
             />
             <p id="ppaypros-phone-hint" className="mt-2 text-sm text-muted-foreground">
-              Utilisez le numéro qui recevra la demande de paiement (01 + 8 chiffres).
+              Entrez les 8 chiffres de votre numéro béninois; le préfixe 01 est ajouté automatiquement. +229 est facultatif.
             </p>
           </section>
         )}
