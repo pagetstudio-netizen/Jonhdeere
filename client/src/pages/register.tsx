@@ -102,7 +102,6 @@ export default function RegisterPage() {
       });
       toast({ title: "Inscription réussie !", description: "Bienvenue chez John Deere !" });
       navigate("/");
-      window.dispatchEvent(new Event("home-welcome-popup:show"));
     } catch (error: any) {
       toast({ title: "Erreur d'inscription", description: error.message || "Une erreur est survenue", variant: "destructive" });
     } finally {

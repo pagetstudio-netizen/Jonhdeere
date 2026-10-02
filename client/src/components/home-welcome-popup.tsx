@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { useAuth } from "@/lib/auth";
 import telegramIcon from "@assets/groupService-1_1790964412411.png";
 import welcomeIllustration from "@assets/1238dd33-a759-49c6-a408-97180f73076e_1790971465728.png";
 import "./home-welcome-popup.css";
@@ -43,19 +45,38 @@ function formatPercent(value?: string) {
 
 export default function HomeWelcomePopup() {
   const [open, setOpen] = useState(false);
+  const { user, isLoading: authLoading } = useAuth();
+  const [location] = useLocation();
+  const lastUserId = useRef<string | null>(null);
+  const pendingSessionPopup = useRef(false);
   const { data: settings, isLoading } = useQuery<HomePopupSettings>({
     queryKey: ["/api/settings"],
     enabled: open,
   });
 
   useEffect(() => {
+    if (authLoading) return;
+
+    const currentUserId = user?.id == null ? null : String(user.id);
+    if (currentUserId === null) {
+      pendingSessionPopup.current = false;
+    } else if (lastUserId.current === null) {
+      pendingSessionPopup.current = true;
+    }
+    lastUserId.current = currentUserId;
+
+    const isAuthOrRobotPayPage =
+      location === "/login" || location === "/register" || location === "/robotpay";
+    if (pendingSessionPopup.current && !isAuthOrRobotPayPage) {
+      pendingSessionPopup.current = false;
+      setOpen(true);
+    }
+  }, [authLoading, location, user?.id]);
+
+  useEffect(() => {
     const showPopup = () => setOpen(true);
-    window.addEventListener("home-welcome-popup:show", showPopup);
     window.addEventListener("home-tab-clicked", showPopup);
-    return () => {
-      window.removeEventListener("home-welcome-popup:show", showPopup);
-      window.removeEventListener("home-tab-clicked", showPopup);
-    };
+    return () => window.removeEventListener("home-tab-clicked", showPopup);
   }, []);
 
   const groupUrl = safeTelegramUrl(settings?.groupLink);
