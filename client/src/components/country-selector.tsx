@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { ApiCountry } from "@/lib/countries";
-import { Check, Loader2, Search, X } from "lucide-react";
+import { Check, Search, X } from "lucide-react";
 import EmptyState from "@/components/empty-state";
 
 function countryFlag(code: string) {
@@ -19,10 +19,25 @@ interface CountrySelectorProps {
 
 export function CountrySelector({ open, onClose, onSelect, selectedCountryCode }: CountrySelectorProps) {
   const [search, setSearch] = useState("");
-  const { data: apiCountries, isLoading, isError } = useQuery<ApiCountry[]>({
+  const searchRef = useRef<HTMLInputElement>(null);
+  const { data: apiCountries, isLoading, isError, refetch } = useQuery<ApiCountry[]>({
     queryKey: ["/api/countries"],
     enabled: open,
   });
+
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    searchRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -31,29 +46,54 @@ export function CountrySelector({ open, onClose, onSelect, selectedCountryCode }
     .map(c => ({ code: c.code, name: c.name, phonePrefix: c.phonePrefix }))
     .filter(country => {
       const query = search.trim().toLowerCase();
-      return !query || country.name.toLowerCase().includes(query) || country.phonePrefix.includes(query);
+      return !query
+        || country.name.toLowerCase().includes(query)
+        || country.code.toLowerCase().includes(query)
+        || country.phonePrefix.includes(query.replace(/^\+/, ""));
     });
+
+  function handleDialogKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+    if (event.key !== "Tab") return;
+
+    const focusable = Array.from(
+      event.currentTarget.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled])',
+      ),
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   return (
     <div
       className="auth-picker-overlay"
       onClick={onClose}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") onClose();
-      }}
+      role="presentation"
     >
       <section
         className="auth-picker-panel"
         role="dialog"
         aria-modal="true"
-        aria-label="Choisir un pays"
+        aria-labelledby="auth-country-dialog-title"
+        onKeyDown={handleDialogKeyDown}
         onClick={(event) => event.stopPropagation()}
       >
         <header className="auth-picker-heading">
           <div>
-            <p className="auth-picker-kicker">Indicatif téléphonique</p>
-            <h2>Choisir un pays</h2>
-            <p>Le code sera ajouté à votre numéro.</p>
+            <h2 id="auth-country-dialog-title">Choisir un pays</h2>
           </div>
           <button type="button" className="auth-picker-close" onClick={onClose} aria-label="Fermer">
             <X aria-hidden="true" />
@@ -62,21 +102,25 @@ export function CountrySelector({ open, onClose, onSelect, selectedCountryCode }
         <label className="auth-picker-search">
           <Search aria-hidden="true" />
           <input
-            autoFocus
+            ref={searchRef}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Rechercher un pays ou un indicatif"
+            placeholder="Rechercher un pays"
             aria-label="Rechercher un pays"
           />
         </label>
         <div className="auth-picker-list">
           {isLoading ? (
-            <div className="auth-picker-loading">
-              <Loader2 className="animate-spin" aria-hidden="true" />
-              <span>Chargement des pays...</span>
+            <div className="auth-picker-skeleton" role="status" aria-label="Chargement des pays">
+              {Array.from({ length: 5 }, (_, index) => (
+                <span className="auth-picker-skeleton-row" key={index} />
+              ))}
             </div>
           ) : isError ? (
-            <p className="auth-picker-empty">Impossible de charger les pays.</p>
+            <div className="auth-picker-error" role="alert">
+              <span>Impossible de charger les pays.</span>
+              <button type="button" onClick={() => refetch()}>Réessayer</button>
+            </div>
           ) : countries.map((country) => {
             const selected = country.code === selectedCountryCode;
             return (

@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { FALLBACK_COUNTRIES, type ApiCountry } from "@/lib/countries";
 import { AuthPageShell } from "@/components/auth-page-shell";
 import { CountrySelector } from "@/components/country-selector";
-import { ChevronDown, Loader2, LockKeyhole } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 
 const loginSchema = z.object({
   phone: z.string().min(8, "Numéro de téléphone invalide"),
@@ -83,10 +83,7 @@ export default function LoginPage() {
   const displayedPrefix = countryData?.phonePrefix || (countriesLoading ? "..." : "");
 
   return (
-    <AuthPageShell
-      cardTitle="Connexion"
-      cardDescription="Accédez à votre compte en toute simplicité."
-    >
+    <AuthPageShell>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <input type="hidden" {...form.register("country")} />
         <div className="auth-fields">
@@ -121,7 +118,6 @@ export default function LoginPage() {
           {form.formState.errors.phone && <p className="auth-error">{form.formState.errors.phone.message}</p>}
 
           <label className="auth-field">
-            <LockKeyhole className="auth-field-icon" aria-hidden="true" />
             <input
               {...form.register("password")}
               type="password"

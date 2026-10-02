@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { FALLBACK_COUNTRIES, type ApiCountry } from "@/lib/countries";
 import { AuthPageShell } from "@/components/auth-page-shell";
 import { CountrySelector } from "@/components/country-selector";
-import { ChevronDown, Code2, Loader2, LockKeyhole } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { normalizeBeninPhone } from "@shared/phone";
 
 const registerSchema = z.object({
@@ -113,10 +113,7 @@ export default function RegisterPage() {
   const phoneField = form.register("phone");
 
   return (
-    <AuthPageShell
-      cardTitle="Créer un compte"
-      cardDescription="Renseignez vos informations pour commencer."
-    >
+    <AuthPageShell>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <input type="hidden" {...form.register("country")} />
         <div className="auth-fields">
@@ -158,12 +155,7 @@ export default function RegisterPage() {
             />
           </div>
           {form.formState.errors.phone && <p className="auth-error">{form.formState.errors.phone.message}</p>}
-          {selectedCountry.toUpperCase() === "BJ" && !form.formState.errors.phone && (
-            <p className="auth-hint">Les 8 chiffres locaux sont complétés automatiquement avec 01.</p>
-          )}
-
           <label className="auth-field">
-            <LockKeyhole className="auth-field-icon" aria-hidden="true" />
             <input
               {...form.register("password")}
               type="password"
@@ -177,7 +169,6 @@ export default function RegisterPage() {
           {form.formState.errors.password && <p className="auth-error">{form.formState.errors.password.message}</p>}
 
           <label className="auth-field">
-            <LockKeyhole className="auth-field-icon" aria-hidden="true" />
             <input
               {...form.register("confirmPassword")}
               type="password"
@@ -191,7 +182,6 @@ export default function RegisterPage() {
           {form.formState.errors.confirmPassword && <p className="auth-error">{form.formState.errors.confirmPassword.message}</p>}
 
           <label className="auth-field">
-            <Code2 className="auth-field-icon" aria-hidden="true" />
             <input
               {...form.register("invitationCode")}
               placeholder="Code d’invitation"
