@@ -1016,7 +1016,7 @@ export default function DepositPage() {
               type="tel"
               inputMode="numeric"
               autoComplete="off"
-              maxLength={18}
+              maxLength={22}
               value={ppayprosPhone}
               onChange={(event) => setPpayprosPhone(event.target.value)}
               className="country-select"
