@@ -395,7 +395,16 @@ export default function DepositPage() {
         toast({ title: "Lien PPayPros indisponible", description: "Aucun lien de paiement n'a été renvoyé." , variant: "destructive" });
       }
     },
-    onError: (error: any) => toast({ title: "Erreur PPayPros", description: error.message, variant: "destructive" }),
+    onError: (error: any) => {
+      const signatureRejected = /signature verification failed/i.test(String(error.message || ""));
+      toast({
+        title: signatureRejected ? "Signature PPayPros refusée" : "Erreur PPayPros",
+        description: signatureRejected
+          ? "Vérifiez que MCH_NO, APP_ID et la clé de signature proviennent du même compte PPayPros."
+          : error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const inpayInitiateMutation = useMutation({
