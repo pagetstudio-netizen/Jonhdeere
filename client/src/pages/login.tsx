@@ -73,6 +73,7 @@ export default function LoginPage() {
     try {
       await login(data.phone, data.country, data.password);
       navigate("/");
+      window.dispatchEvent(new Event("home-welcome-popup:show"));
     } catch (error: any) {
       toast({ title: "Erreur de connexion", description: error.message || "Vérifiez vos informations", variant: "destructive" });
     } finally {

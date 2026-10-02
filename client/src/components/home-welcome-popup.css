@@ -37,6 +37,15 @@
   line-height: 1.2;
 }
 
+.home-welcome-illustration {
+  display: block;
+  width: calc(100% - 32px);
+  height: clamp(112px, 27vh, 230px);
+  flex: none;
+  margin: -10px auto 13px;
+  object-fit: contain;
+}
+
 .home-welcome-telegram {
   display: flex;
   width: calc(100% - 56px);

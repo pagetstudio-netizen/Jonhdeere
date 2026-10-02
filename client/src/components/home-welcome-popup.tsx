@@ -3,6 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import telegramIcon from "@assets/groupService-1_1790964412411.png";
+import welcomeIllustration from "@assets/1238dd33-a759-49c6-a408-97180f73076e_1790971465728.png";
 import "./home-welcome-popup.css";
 
 interface HomePopupSettings {
@@ -49,8 +50,12 @@ export default function HomeWelcomePopup() {
 
   useEffect(() => {
     const showPopup = () => setOpen(true);
+    window.addEventListener("home-welcome-popup:show", showPopup);
     window.addEventListener("home-tab-clicked", showPopup);
-    return () => window.removeEventListener("home-tab-clicked", showPopup);
+    return () => {
+      window.removeEventListener("home-welcome-popup:show", showPopup);
+      window.removeEventListener("home-tab-clicked", showPopup);
+    };
   }, []);
 
   const groupUrl = safeTelegramUrl(settings?.groupLink);
@@ -72,6 +77,11 @@ export default function HomeWelcomePopup() {
           <DialogPrimitive.Title className="home-welcome-title">
             John Deere
           </DialogPrimitive.Title>
+          <img
+            className="home-welcome-illustration"
+            src={welcomeIllustration}
+            alt="Personnages de Zootopia réunis autour de 2025"
+          />
           <DialogPrimitive.Description className="sr-only">
             Informations de la plateforme et lien du groupe Telegram.
           </DialogPrimitive.Description>
