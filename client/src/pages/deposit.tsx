@@ -400,7 +400,7 @@ export default function DepositPage() {
       toast({
         title: signatureRejected ? "Signature PPayPros refusée" : "Erreur PPayPros",
         description: signatureRejected
-          ? "Vérifiez que MCH_NO, APP_ID et la clé de signature proviennent du même compte PPayPros."
+          ? "Vérifiez que MCH_NO, APP_ID et la clé viennent du même compte. Si la clé a été régénérée dans PPayPros, l’ancienne est invalidée; remplacez PPAYPROS_PRIVATE_KEY dans les Secrets."
           : error.message,
         variant: "destructive",
       });

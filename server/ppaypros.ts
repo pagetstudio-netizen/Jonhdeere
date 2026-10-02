@@ -143,7 +143,7 @@ async function postSigned(
   try {
     response = await fetch(`${PPAYPROS_API_BASE}${endpoint}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json; charset=UTF-8" },
       body: JSON.stringify(requestBody),
       signal: AbortSignal.timeout(20_000),
     });
