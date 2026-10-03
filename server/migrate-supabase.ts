@@ -1,4 +1,5 @@
 import pg from "pg";
+import { JOHN_DEERE_PRODUCT_CATALOG } from "../shared/product-catalog";
 
 const { Pool } = pg;
 
@@ -336,15 +337,15 @@ async function run() {
     console.log("✅ Paramètres plateforme insérés");
 
     // ── Seed products ──
-    const productsData = [
-      { name: "VIP 1", price: 4000, daily_earnings: 200, cycle_days: 80, total_return: 16000, is_free: false, sort_order: 1 },
-      { name: "VIP 2", price: 10000, daily_earnings: 550, cycle_days: 80, total_return: 44000, is_free: false, sort_order: 2 },
-      { name: "VIP 3", price: 30000, daily_earnings: 1700, cycle_days: 80, total_return: 136000, is_free: false, sort_order: 3 },
-      { name: "VIP 4", price: 60000, daily_earnings: 3500, cycle_days: 80, total_return: 280000, is_free: false, sort_order: 4 },
-      { name: "VIP 5", price: 100000, daily_earnings: 6000, cycle_days: 80, total_return: 480000, is_free: false, sort_order: 5 },
-      { name: "VIP 6", price: 200000, daily_earnings: 13000, cycle_days: 80, total_return: 1040000, is_free: false, sort_order: 6 },
-      { name: "VIP 7", price: 500000, daily_earnings: 35000, cycle_days: 80, total_return: 2800000, is_free: false, sort_order: 7 },
-    ];
+    const productsData = JOHN_DEERE_PRODUCT_CATALOG.map((product) => ({
+      name: product.name,
+      price: product.price,
+      daily_earnings: product.dailyEarnings,
+      cycle_days: product.cycleDays,
+      total_return: product.totalReturn,
+      is_free: false,
+      sort_order: product.sortOrder,
+    }));
     for (const p of productsData) {
       await client.query(
         `INSERT INTO products (name, price, daily_earnings, cycle_days, total_return, is_free, sort_order)

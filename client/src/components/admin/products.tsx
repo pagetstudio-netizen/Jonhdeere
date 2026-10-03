@@ -155,7 +155,7 @@ export default function AdminProducts() {
       <FormField control={form.control} name="name" render={({ field }) => (
         <FormItem>
           <FormLabel>Nom du produit</FormLabel>
-          <FormControl><Input {...field} placeholder="Ex: VIP 3" /></FormControl>
+          <FormControl><Input {...field} placeholder="Ex. : Tracteur série 5E" /></FormControl>
           <FormMessage />
         </FormItem>
       )} />

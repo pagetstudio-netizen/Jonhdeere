@@ -1,3 +1,5 @@
+import { JOHN_DEERE_PRODUCT_IMAGE_PATHS } from "@shared/product-catalog";
+
 export const JOHN_DEERE_LOGO = "/john-deere/logo.jpg";
 
 export const JOHN_DEERE_PHOTOS = {
@@ -13,18 +15,7 @@ export const JOHN_DEERE_PHOTOS = {
   emblem: "/john-deere/deere-emblem.jpg",
 } as const;
 
-export const JOHN_DEERE_PRODUCT_IMAGES = [
-  "/john-deere/products/4066r-tractor.webp",
-  "/john-deere/products/harvesting-equipment.webp",
-  "/john-deere/products/camp-mowers.webp",
-  "/john-deere/products/fm40-mower.webp",
-  "/john-deere/products/gm20-mower.webp",
-  "/john-deere/products/fm41-mower.webp",
-  "/john-deere/products/r4d-tractor.webp",
-  "/john-deere/products/precision-seeder.webp",
-  "/john-deere/products/utility-tractor.webp",
-  "/john-deere/products/x350-mower.webp",
-] as const;
+export const JOHN_DEERE_PRODUCT_IMAGES = JOHN_DEERE_PRODUCT_IMAGE_PATHS;
 
 export function getJohnDeereProductImage(imageUrl: string | null | undefined, index: number) {
   if (imageUrl?.startsWith("/john-deere/products/")) return imageUrl;

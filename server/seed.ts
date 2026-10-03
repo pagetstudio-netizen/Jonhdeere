@@ -1,20 +1,8 @@
 import { db } from "./db";
-import { users, products, tasks, paymentChannels, platformSettings, countries, stakingProducts } from "@shared/schema";
+import { users, products, tasks, paymentChannels, platformSettings, countries } from "@shared/schema";
+import { JOHN_DEERE_PRODUCT_CATALOG, JOHN_DEERE_PRODUCT_IMAGE_PATHS } from "@shared/product-catalog";
 import bcrypt from "bcrypt";
 import { eq, sql } from "drizzle-orm";
-
-const JOHN_DEERE_PRODUCT_IMAGE_PATHS = [
-  "/john-deere/products/4066r-tractor.webp",
-  "/john-deere/products/harvesting-equipment.webp",
-  "/john-deere/products/camp-mowers.webp",
-  "/john-deere/products/fm40-mower.webp",
-  "/john-deere/products/gm20-mower.webp",
-  "/john-deere/products/fm41-mower.webp",
-  "/john-deere/products/r4d-tractor.webp",
-  "/john-deere/products/precision-seeder.webp",
-  "/john-deere/products/utility-tractor.webp",
-  "/john-deere/products/x350-mower.webp",
-];
 
 export async function seed() {
   console.log("Seeding database...");
@@ -172,23 +160,14 @@ export async function seed() {
   // Seed products only if table is empty (first install only — never overwrite admin changes)
   const existingProducts = await db.select().from(products);
   if (existingProducts.length === 0) {
-    const defaultProducts = [
-      { name: "VIP 1", price: 4000, dailyEarnings: 300, cycleDays: 90, totalReturn: 27000, sortOrder: 1 },
-      { name: "VIP 2", price: 10000, dailyEarnings: 800, cycleDays: 90, totalReturn: 72000, sortOrder: 2 },
-      { name: "VIP 3", price: 15000, dailyEarnings: 1500, cycleDays: 90, totalReturn: 135000, sortOrder: 3 },
-      { name: "VIP 4", price: 25000, dailyEarnings: 2000, cycleDays: 90, totalReturn: 180000, sortOrder: 4 },
-      { name: "VIP 5", price: 40000, dailyEarnings: 3500, cycleDays: 90, totalReturn: 315000, sortOrder: 5 },
-      { name: "VIP 6", price: 100000, dailyEarnings: 10000, cycleDays: 90, totalReturn: 900000, sortOrder: 6 },
-      { name: "VIP 7", price: 250000, dailyEarnings: 30000, cycleDays: 90, totalReturn: 2700000, sortOrder: 7 },
-    ];
-    await db.insert(products).values(defaultProducts);
+    await db.insert(products).values(JOHN_DEERE_PRODUCT_CATALOG.map((product) => ({ ...product })));
     console.log("Products seeded (first install)");
   } else {
     console.log(`Products skipped — ${existingProducts.length} existing products preserved`);
   }
 
   // Replace the legacy catalog artwork once, without overwriting later admin edits.
-  const imageMigrationKey = "johnDeereProductImagesV1";
+  const imageMigrationKey = "johnDeereProductImagesV2";
   const imageMigration = await db.select({ key: platformSettings.key })
     .from(platformSettings)
     .where(eq(platformSettings.key, imageMigrationKey))
@@ -201,8 +180,9 @@ export async function seed() {
     for (let index = 0; index < orderedProducts.length; index += 1) {
       const product = orderedProducts[index];
       if (!product) continue;
-      const imageIndex = product.name === "VIP 1" ? 0 : product.sortOrder;
-      const imageUrl = JOHN_DEERE_PRODUCT_IMAGE_PATHS[imageIndex % JOHN_DEERE_PRODUCT_IMAGE_PATHS.length];
+      const imageIndex = Math.max(0, product.sortOrder - 1) % JOHN_DEERE_PRODUCT_IMAGE_PATHS.length;
+      const imageUrl = JOHN_DEERE_PRODUCT_IMAGE_PATHS[imageIndex];
+      if (!imageUrl) continue;
       await db.update(products).set({ imageUrl }).where(eq(products.id, product.id));
     }
     await db.insert(platformSettings).values({ key: imageMigrationKey, value: "1" });
@@ -307,21 +287,6 @@ export async function seed() {
     }
   }
   console.log("Settings check complete");
-
-  // Seed staking products only if table is empty (first install only — never overwrite admin changes)
-  const existingStakingProducts = await db.select().from(stakingProducts);
-  if (existingStakingProducts.length === 0) {
-    await db.insert(stakingProducts).values([
-      { name: "Produit 1", description: "5% par jour pendant 3 jours. Capital récupérable à la fin.", price: 2000, returnAmount: 2300, lockDays: 3, isActive: true },
-      { name: "Produit 2", description: "5% par jour pendant 7 jours. Capital récupérable à la fin.", price: 5000, returnAmount: 6750, lockDays: 7, isActive: true },
-      { name: "Produit 3", description: "5% par jour pendant 12 jours. Capital récupérable à la fin.", price: 10000, returnAmount: 16000, lockDays: 12, isActive: true },
-      { name: "Produit 4", description: "5% par jour pendant 16 jours. Capital récupérable à la fin.", price: 20000, returnAmount: 36000, lockDays: 16, isActive: true },
-      { name: "Produit 5", description: "5% par jour pendant 20 jours. Capital récupérable à la fin.", price: 50000, returnAmount: 100000, lockDays: 20, isActive: true },
-    ]);
-    console.log("Staking products seeded (first install)");
-  } else {
-    console.log(`Staking products skipped — ${existingStakingProducts.length} existing staking products preserved`);
-  }
 
   console.log("Database seeding complete!");
 }
