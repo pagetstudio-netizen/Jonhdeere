@@ -83,11 +83,14 @@ export default function LoginPage() {
   const displayedPrefix = countryData?.phonePrefix || (countriesLoading ? "..." : "");
 
   return (
-    <AuthPageShell>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+    <AuthPageShell mode="login">
+      <form className="auth-login-form" onSubmit={form.handleSubmit(onSubmit)}>
         <input type="hidden" {...form.register("country")} />
         <div className="auth-fields">
           <div className="auth-field auth-phone-field">
+            <span className="auth-orb auth-orb-left" aria-hidden="true">
+              <img src="/john-deere/user-icon.png" alt="" />
+            </span>
             <button
               type="button"
               className="auth-country-button"
@@ -97,9 +100,9 @@ export default function LoginPage() {
               aria-label={`Pays : ${countryData?.name || "non sélectionné"}, indicatif +${displayedPrefix}`}
               data-testid="button-select-country"
             >
-              <span className="auth-country-label">Pays</span>
+              <span className="auth-country-label">Nation</span>
               <span className="auth-country-value">
-                +{displayedPrefix}
+                <span className="auth-country-code">+{displayedPrefix}</span>
                 <ChevronDown aria-hidden="true" />
               </span>
             </button>
@@ -117,16 +120,19 @@ export default function LoginPage() {
           </div>
           {form.formState.errors.phone && <p className="auth-error">{form.formState.errors.phone.message}</p>}
 
-          <label className="auth-field">
+          <label className="auth-field auth-password-field auth-icon-right">
             <input
               {...form.register("password")}
               type="password"
               autoComplete="current-password"
-              placeholder="Mot de passe"
+              placeholder="Password"
               aria-label="Mot de passe"
               aria-invalid={Boolean(form.formState.errors.password)}
               data-testid="input-password"
             />
+            <span className="auth-orb auth-orb-right" aria-hidden="true">
+              <img src="/john-deere/security-icon.png" alt="" />
+            </span>
           </label>
           {form.formState.errors.password && <p className="auth-error">{form.formState.errors.password.message}</p>}
         </div>
@@ -140,7 +146,7 @@ export default function LoginPage() {
           Pas encore inscrit ? Créer un compte
         </button>
         <button type="submit" disabled={isLoading} className="auth-submit" data-testid="button-login">
-          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Se connecter"}
+          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "connecter to app"}
         </button>
       </form>
       <CountrySelector

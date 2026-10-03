@@ -3,29 +3,30 @@ import "./auth-redesign.css";
 
 interface AuthPageShellProps {
   children: ReactNode;
+  mode: "login" | "register";
 }
 
-export function AuthPageShell({ children }: AuthPageShellProps) {
+export function AuthPageShell({ children, mode }: AuthPageShellProps) {
   return (
-    <main className="auth-redesign">
-      <div className="auth-shell">
+    <main className="auth-redesign" data-mode={mode}>
+      <div className={`auth-shell auth-shell-${mode}`}>
         <header className="auth-hero">
           <div className="auth-hero-copy">
             <h1>
-              Bienvenue chez
+              <span>Bienvenue chez</span>
               <strong>John Deere</strong>
             </h1>
           </div>
           <div className="auth-art">
             <img
-              src="/john-deere/auth-zootopia.png"
-              alt=""
-              aria-hidden="true"
+              src="/john-deere/tractor.png"
+              alt="Tracteur John Deere"
             />
           </div>
         </header>
 
         <section className="auth-card" aria-label="Formulaire d’authentification">
+          {mode === "login" && <h2 className="auth-login-heading">heureuse de vous revoir</h2>}
           {children}
         </section>
       </div>

@@ -113,11 +113,14 @@ export default function RegisterPage() {
   const phoneField = form.register("phone");
 
   return (
-    <AuthPageShell>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+    <AuthPageShell mode="register">
+      <form className="auth-register-form" onSubmit={form.handleSubmit(onSubmit)}>
         <input type="hidden" {...form.register("country")} />
         <div className="auth-fields">
           <div className="auth-field auth-phone-field">
+            <span className="auth-orb auth-orb-left" aria-hidden="true">
+              <img src="/john-deere/user-icon.png" alt="" />
+            </span>
             <button
               type="button"
               className="auth-country-button"
@@ -127,9 +130,9 @@ export default function RegisterPage() {
               aria-label={`Pays : ${countryData?.name || "non sélectionné"}, indicatif +${displayedPrefix}`}
               data-testid="button-select-country"
             >
-              <span className="auth-country-label">Pays</span>
+              <span className="auth-country-label">Nation</span>
               <span className="auth-country-value">
-                +{displayedPrefix}
+                <span className="auth-country-code">+{displayedPrefix}</span>
                 <ChevronDown aria-hidden="true" />
               </span>
             </button>
@@ -155,39 +158,48 @@ export default function RegisterPage() {
             />
           </div>
           {form.formState.errors.phone && <p className="auth-error">{form.formState.errors.phone.message}</p>}
-          <label className="auth-field">
+          <label className="auth-field auth-register-password auth-icon-right">
             <input
               {...form.register("password")}
               type="password"
               autoComplete="new-password"
-              placeholder="Mot de passe"
+              placeholder="entrée votre mot de passe"
               aria-label="Mot de passe"
               aria-invalid={Boolean(form.formState.errors.password)}
               data-testid="input-password"
             />
+            <span className="auth-orb auth-orb-right" aria-hidden="true">
+              <img src="/john-deere/security-icon.png" alt="" />
+            </span>
           </label>
           {form.formState.errors.password && <p className="auth-error">{form.formState.errors.password.message}</p>}
 
-          <label className="auth-field">
+          <label className="auth-field auth-confirm-password auth-icon-left">
             <input
               {...form.register("confirmPassword")}
               type="password"
               autoComplete="new-password"
-              placeholder="Confirmer le mot de passe"
+              placeholder="confirmé votre mot de passe"
               aria-label="Confirmer le mot de passe"
               aria-invalid={Boolean(form.formState.errors.confirmPassword)}
               data-testid="input-confirm-password"
             />
+            <span className="auth-orb auth-orb-left" aria-hidden="true">
+              <img src="/john-deere/security-icon.png" alt="" />
+            </span>
           </label>
           {form.formState.errors.confirmPassword && <p className="auth-error">{form.formState.errors.confirmPassword.message}</p>}
 
-          <label className="auth-field">
+          <label className="auth-field auth-invitation-code auth-icon-right">
             <input
               {...form.register("invitationCode")}
               placeholder="Code d’invitation"
               aria-label="Code d’invitation"
               data-testid="input-invitation-code"
             />
+            <span className="auth-orb auth-orb-right" aria-hidden="true">
+              <img src="/john-deere/share-icon.png" alt="" />
+            </span>
           </label>
         </div>
 
@@ -200,7 +212,7 @@ export default function RegisterPage() {
           Déjà inscrit ? Se connecter
         </button>
         <button type="submit" disabled={isLoading} className="auth-submit" data-testid="button-register">
-          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Créer mon compte"}
+          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "s'inscrire"}
         </button>
       </form>
       <CountrySelector
