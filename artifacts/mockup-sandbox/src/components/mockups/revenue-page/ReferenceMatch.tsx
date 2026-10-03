@@ -76,7 +76,7 @@ export function ReferenceMatch() {
           min-height: 100dvh;
           background: var(--jd-paper);
           color: var(--jd-ink);
-          font-family: "DM Sans", "Trebuchet MS", sans-serif;
+          font-family: "Inter", Arial, sans-serif;
           -webkit-font-smoothing: antialiased;
         }
         .jd-revenue * { box-sizing: border-box; }
@@ -89,7 +89,7 @@ export function ReferenceMatch() {
         }
         .jd-revenue__total {
           display: flex;
-          min-height: 152px;
+          min-height: 138px;
           flex-direction: column;
           align-items: center;
           justify-content: center;
@@ -97,15 +97,6 @@ export function ReferenceMatch() {
           background: var(--jd-green);
           color: #fff;
           text-align: center;
-        }
-        .jd-revenue__eyebrow {
-          margin: 0 0 7px;
-          color: rgba(255,255,255,.76);
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: .14em;
-          line-height: 1;
-          text-transform: uppercase;
         }
         .jd-revenue__amount {
           margin: 0;
@@ -270,7 +261,6 @@ export function ReferenceMatch() {
 
       <div className="jd-revenue__screen">
         <header className="jd-revenue__total" aria-label="Revenus totaux">
-          <p className="jd-revenue__eyebrow">John Deere</p>
           <p className="jd-revenue__amount">FCFA {formatAmount(sampleUser.totalEarnings)}</p>
           <p className="jd-revenue__total-label">Revenus totaux</p>
         </header>
@@ -302,7 +292,7 @@ export function ReferenceMatch() {
               </div>
               <div className="jd-revenue__metric">
                 <span className="jd-revenue__metric-value">
-                  FCFA {formatAmount(product.product?.totalReturn ?? 0)}
+                  FCFA {formatAmount(product.totalEarned)}
                 </span>
                 <span className="jd-revenue__metric-label">Revenus totaux</span>
               </div>
@@ -319,7 +309,7 @@ export function ReferenceMatch() {
                 }}
               />
               <div className="jd-revenue__product-copy">
-                <h1 className="jd-revenue__product-name">{product.product?.name}</h1>
+                <h2 className="jd-revenue__product-name">{product.product?.name}</h2>
                 <p className="jd-revenue__duration">
                   Durée : {completedDays}/{cycleDays} Jours
                 </p>
