@@ -170,10 +170,6 @@
   color: var(--auth-copy);
 }
 
-.auth-redesign .auth-field:focus-within {
-  box-shadow: inset 0 0 0 2px rgba(237, 246, 242, .74), 0 1px 3px rgba(0, 0, 0, .18);
-}
-
 .auth-redesign .auth-field input {
   width: 0;
   min-width: 0;
@@ -400,12 +396,8 @@
 }
 
 .auth-redesign :is(button, input):focus-visible {
-  outline: 2px solid #f5f8f4;
-  outline-offset: 3px;
-}
-
-.auth-redesign .auth-field input:focus-visible {
   outline: 0;
+  outline-offset: 0;
 }
 
 .auth-redesign .auth-picker-overlay {
