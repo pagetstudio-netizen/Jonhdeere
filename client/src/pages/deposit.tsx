@@ -332,8 +332,8 @@ export default function DepositPage() {
 
     window.history.replaceState({}, "", "/deposit");
     toast({
-      title: "Retour de PPayPros reçu",
-      description: "Le solde sera crédité uniquement après confirmation du paiement par PPayPros.",
+      title: "Retour du paiement reçu",
+      description: "Le solde sera crédité uniquement après confirmation du paiement.",
     });
     queryClient.invalidateQueries({ queryKey: ["/api/deposits/history"] });
   }, []);
@@ -365,7 +365,7 @@ export default function DepositPage() {
   const ppayprosInitiateMutation = useMutation({
     mutationFn: async () => {
       if (user?.country?.toUpperCase() !== "BJ") {
-        throw new Error("PPayPros nécessite un compte enregistré au Bénin.");
+        throw new Error("Ce paiement nécessite un compte enregistré au Bénin.");
       }
       const customerPhone = normalizeBeninPhone(user?.phone);
       if (!customerPhone) {
@@ -381,7 +381,12 @@ export default function DepositPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || "Erreur PPayPros");
+        const message = String(data.message || "");
+        throw new Error(
+          /ppaypros/i.test(message)
+            ? "Impossible de préparer le paiement. Réessayez ou contactez le service client."
+            : message || "Impossible de préparer le paiement."
+        );
       }
       return res.json();
     },
@@ -389,16 +394,19 @@ export default function DepositPage() {
       if (data.ppayprosUrl) {
         window.location.assign(data.ppayprosUrl);
       } else {
-        toast({ title: "Lien PPayPros indisponible", description: "Aucun lien de paiement n'a été renvoyé." , variant: "destructive" });
+        toast({ title: "Lien de paiement indisponible", description: "Aucun lien de paiement n'a été renvoyé.", variant: "destructive" });
       }
     },
     onError: (error: any) => {
       const signatureRejected = /signature verification failed/i.test(String(error.message || ""));
+      const providerNamedError = /ppaypros/i.test(String(error.message || ""));
       toast({
-        title: signatureRejected ? "Signature PPayPros refusée" : "Erreur PPayPros",
+        title: signatureRejected ? "Paiement refusé" : "Erreur de paiement",
         description: signatureRejected
-          ? "Vérifiez que MCH_NO, APP_ID et la clé viennent du même compte. Si la clé a été régénérée dans PPayPros, l’ancienne est invalidée; remplacez PPAYPROS_PRIVATE_KEY dans les Secrets."
-          : error.message,
+          ? "Une erreur de configuration a empêché le paiement. Réessayez plus tard ou contactez le service client."
+          : providerNamedError
+            ? "Impossible de préparer le paiement. Réessayez ou contactez le service client."
+            : error.message,
         variant: "destructive",
       });
     },
@@ -604,7 +612,7 @@ export default function DepositPage() {
     if (ppayprosAvailable && !Number.isInteger(Number(amount))) {
       toast({
         title: "Montant invalide",
-        description: "PPayPros accepte uniquement un montant entier en FCFA.",
+        description: "Ce paiement accepte uniquement un montant entier en FCFA.",
         variant: "destructive",
       });
       return;
@@ -622,7 +630,7 @@ export default function DepositPage() {
       if (user?.country?.toUpperCase() !== "BJ") {
         toast({
           title: "Compte non béninois",
-          description: "PPayPros utilise le numéro béninois enregistré sur le compte.",
+          description: "Le paiement utilise le numéro béninois enregistré sur le compte.",
           variant: "destructive",
         });
         return;
@@ -1027,12 +1035,6 @@ export default function DepositPage() {
           </select>
         </section>
 
-        {ppayprosAvailable && (
-          <p className="text-sm text-muted-foreground">
-            Le numéro de téléphone de votre compte sera utilisé pour créer le paiement PPayPros.
-          </p>
-        )}
-
         <button
           className="continue"
           onClick={handleAmountNext}
@@ -1040,7 +1042,7 @@ export default function DepositPage() {
         >
           {(inpayInitiateMutation.isPending || wpInitiateMutation.isPending || ppayprosInitiateMutation.isPending)
             ? "Chargement…"
-            : ppayprosAvailable ? "Payer avec PPayPros" : "Recharger"}
+            : ppayprosAvailable ? "Payer" : "Recharger"}
         </button>
 
         <section className="instructions" aria-label="Instructions de recharge">
