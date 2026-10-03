@@ -6,7 +6,7 @@ export const JOHN_DEERE_PRODUCT_CATALOG = [
     cycleDays: 90,
     totalReturn: 38700,
     sortOrder: 1,
-    imageUrl: "/john-deere/products/4066r-tractor.webp",
+    imageUrl: "/john-deere/products/catalog/5e-series-tractor.webp",
   },
   {
     name: "Moissonneuse-batteuse S770",
@@ -15,7 +15,7 @@ export const JOHN_DEERE_PRODUCT_CATALOG = [
     cycleDays: 90,
     totalReturn: 252900,
     sortOrder: 2,
-    imageUrl: "/john-deere/products/harvesting-equipment.webp",
+    imageUrl: "/john-deere/products/catalog/s770-combine.webp",
   },
   {
     name: "Chargeuse sur pneus 544K",
@@ -24,7 +24,7 @@ export const JOHN_DEERE_PRODUCT_CATALOG = [
     cycleDays: 90,
     totalReturn: 516960,
     sortOrder: 3,
-    imageUrl: "/john-deere/products/r4d-tractor.webp",
+    imageUrl: "/john-deere/products/catalog/544k-loader.webp",
   },
   {
     name: "Presse à balles rondes 560R",
@@ -33,7 +33,7 @@ export const JOHN_DEERE_PRODUCT_CATALOG = [
     cycleDays: 90,
     totalReturn: 1085850,
     sortOrder: 4,
-    imageUrl: "/john-deere/products/harvesting-equipment.webp",
+    imageUrl: "/john-deere/products/catalog/560r-round-baler.webp",
   },
   {
     name: "Semoir de précision 1700",
@@ -42,7 +42,7 @@ export const JOHN_DEERE_PRODUCT_CATALOG = [
     cycleDays: 90,
     totalReturn: 2135700,
     sortOrder: 5,
-    imageUrl: "/john-deere/products/precision-seeder.webp",
+    imageUrl: "/john-deere/products/catalog/1700-precision-planter.webp",
   },
   {
     name: "Pulvérisateur automoteur R4030",
@@ -51,7 +51,7 @@ export const JOHN_DEERE_PRODUCT_CATALOG = [
     cycleDays: 90,
     totalReturn: 2462400,
     sortOrder: 6,
-    imageUrl: "/john-deere/products/utility-tractor.webp",
+    imageUrl: "/john-deere/products/catalog/r4030-sprayer.webp",
   },
   {
     name: "Gator XUV 835M",
@@ -60,7 +60,7 @@ export const JOHN_DEERE_PRODUCT_CATALOG = [
     cycleDays: 90,
     totalReturn: 4464000,
     sortOrder: 7,
-    imageUrl: "/john-deere/products/camp-mowers.webp",
+    imageUrl: "/john-deere/products/catalog/gator-xuv-835m.webp",
   },
   {
     name: "Tondeuse ZTrak Z530M",
@@ -69,7 +69,7 @@ export const JOHN_DEERE_PRODUCT_CATALOG = [
     cycleDays: 90,
     totalReturn: 10142100,
     sortOrder: 8,
-    imageUrl: "/john-deere/products/x350-mower.webp",
+    imageUrl: "/john-deere/products/catalog/ztrak-z530m.webp",
   },
 ] as const;
 

@@ -167,7 +167,7 @@ export async function seed() {
   }
 
   // Replace the legacy catalog artwork once, without overwriting later admin edits.
-  const imageMigrationKey = "johnDeereProductImagesV2";
+  const imageMigrationKey = "johnDeereProductImagesV3";
   const imageMigration = await db.select({ key: platformSettings.key })
     .from(platformSettings)
     .where(eq(platformSettings.key, imageMigrationKey))
