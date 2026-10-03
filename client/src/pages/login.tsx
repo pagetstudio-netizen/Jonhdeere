@@ -137,6 +137,9 @@ export default function LoginPage() {
           {form.formState.errors.password && <p className="auth-error">{form.formState.errors.password.message}</p>}
         </div>
 
+        <button type="submit" disabled={isLoading} className="auth-submit" data-testid="button-login">
+          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "connecter to app"}
+        </button>
         <button
           type="button"
           className="auth-switch"
@@ -144,9 +147,6 @@ export default function LoginPage() {
           data-testid="link-register"
         >
           Pas encore inscrit ? Créer un compte
-        </button>
-        <button type="submit" disabled={isLoading} className="auth-submit" data-testid="button-login">
-          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "connecter to app"}
         </button>
       </form>
       <CountrySelector

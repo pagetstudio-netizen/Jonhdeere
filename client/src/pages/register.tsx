@@ -203,6 +203,9 @@ export default function RegisterPage() {
           </label>
         </div>
 
+        <button type="submit" disabled={isLoading} className="auth-submit" data-testid="button-register">
+          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "s'inscrire"}
+        </button>
         <button
           type="button"
           className="auth-switch"
@@ -210,9 +213,6 @@ export default function RegisterPage() {
           data-testid="link-login"
         >
           Déjà inscrit ? Se connecter
-        </button>
-        <button type="submit" disabled={isLoading} className="auth-submit" data-testid="button-register">
-          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "s'inscrire"}
         </button>
       </form>
       <CountrySelector
