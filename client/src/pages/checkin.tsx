@@ -27,6 +27,12 @@ function formatAmount(value: number) {
   }).format(Number.isFinite(value) ? value : 0);
 }
 
+function formatStat(value: number | undefined) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? formatAmount(value)
+    : "—";
+}
+
 export default function CheckinPage() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
@@ -62,8 +68,9 @@ export default function CheckinPage() {
   if (!user) return null;
 
   const currency = getCountryByCode(user.country)?.currency || "FCFA";
-  const currencyLabel = /^(XOF|XAF|FCFA)$/i.test(currency) ? "FC" : currency;
-  const totalClaimed = Number(statusQuery.data?.totalBonusClaimed || 0);
+  const currencyLabel = /^(XOF|XAF|FCFA)$/i.test(currency) ? "FCFA" : currency;
+  const totalClaimed = statusQuery.data?.totalBonusClaimed;
+  const daysPointed = statusQuery.data?.daysPointed;
   const hoursRemaining = Math.max(0, Number(statusQuery.data?.hoursRemaining || 0));
   const canClaim = statusQuery.data?.canClaim === true;
   const isUnavailable = !canClaim && hoursRemaining > 0;
@@ -93,7 +100,7 @@ export default function CheckinPage() {
 
         <section className="checkin-intro" aria-label="Revenus cumulés">
           <p className="checkin-total">
-            {formatAmount(totalClaimed)}
+            {formatStat(totalClaimed)}
             <span>{currencyLabel}</span>
           </p>
           <h2 className="checkin-intro-title">Revenus cumulés</h2>
@@ -105,14 +112,13 @@ export default function CheckinPage() {
               {formatAmount(DAILY_BONUS_AMOUNT)}
               <span>{currencyLabel}</span>
             </p>
-            <p className="checkin-stat-label">Revenus du check-in quotidien</p>
+            <p className="checkin-stat-label">Bonus par check-in</p>
           </div>
           <div className="checkin-stat">
             <p className="checkin-stat-value checkin-stat-secondary">
-              {formatAmount(totalClaimed)}
-              <span>{currencyLabel}</span>
+              {formatStat(daysPointed)}
             </p>
-            <p className="checkin-stat-label">Revenus cumulés</p>
+            <p className="checkin-stat-label">Check-ins effectués</p>
           </div>
         </section>
 
