@@ -1,5 +1,10 @@
-const CACHE_NAME = "john-deere-v1";
-const STATIC_ASSETS = ["/", "/manifest.json", "/john-deere/logo.jpg"];
+const CACHE_NAME = "john-deere-v2";
+const STATIC_ASSETS = [
+  "/",
+  "/manifest.json",
+  "/john-deere/logo.jpg",
+  "/favicon-square.jpg?v=john-deere",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

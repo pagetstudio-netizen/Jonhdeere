@@ -38,8 +38,7 @@ export default function RegisterPage() {
   const [hasChosenCountry, setHasChosenCountry] = useState(false);
 
   const params = new URLSearchParams(searchString);
-  // The current invitation format is /invitation?invite?code=ABC123.
-  // Because the format contains a second "?", parse that part explicitly.
+  // Keep accepting legacy invitation links that placed a second "?" before code.
   const currentInvitationMatch = searchString.match(/[?&]code=([^&?#]+)/i);
   const refCode = currentInvitationMatch?.[1]
     || params.get("money")

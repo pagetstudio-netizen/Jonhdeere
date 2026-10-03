@@ -47,7 +47,9 @@ export default function TeamPage() {
 
   const countryInfo = getCountryByCode(user.country);
   const currency = countryInfo?.currency === "FCFA" ? "XOF" : countryInfo?.currency || "XOF";
-  const referralLink = `https://Tonnew.top/invitation?invite?code=${user.referralCode}`;
+  const referralUrl = new URL("/invitation", window.location.origin);
+  referralUrl.searchParams.set("code", user.referralCode);
+  const referralLink = referralUrl.toString();
   const totalPeople =
     (stats?.level1Count || 0) +
     (stats?.level2Count || 0) +
