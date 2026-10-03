@@ -6,6 +6,8 @@ export const modules: ModuleMap = {
   "./components/mockups/auth-redesign/PalRobot.tsx": () => import("../components/mockups/auth-redesign/PalRobot.tsx"),
   "./components/mockups/checkin-redesign/Current.tsx": () => import("../components/mockups/checkin-redesign/Current.tsx"),
   "./components/mockups/checkin-redesign/ReferenceMatch.tsx": () => import("../components/mockups/checkin-redesign/ReferenceMatch.tsx"),
+  "./components/mockups/revenue-page/Current.tsx": () => import("../components/mockups/revenue-page/Current.tsx"),
+  "./components/mockups/revenue-page/ReferenceMatch.tsx": () => import("../components/mockups/revenue-page/ReferenceMatch.tsx"),
   "./components/mockups/service-client-page/Current.tsx": () => import("../components/mockups/service-client-page/Current.tsx"),
   "./components/mockups/service-client-page/FrenchMatch.tsx": () => import("../components/mockups/service-client-page/FrenchMatch.tsx")
 };
