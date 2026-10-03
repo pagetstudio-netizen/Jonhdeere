@@ -35,6 +35,7 @@ export default function RegisterPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [countryModalOpen, setCountryModalOpen] = useState(false);
+  const [hasChosenCountry, setHasChosenCountry] = useState(false);
 
   const params = new URLSearchParams(searchString);
   // The current invitation format is /invitation?invite?code=ABC123.
@@ -110,6 +111,7 @@ export default function RegisterPage() {
   }
 
   const displayedPrefix = countryData?.phonePrefix || (countriesLoading ? "..." : "");
+  const countryLabel = hasChosenCountry && countryData ? countryData.name : "Nation";
   const phoneField = form.register("phone");
 
   return (
@@ -130,7 +132,7 @@ export default function RegisterPage() {
               aria-label={`Pays : ${countryData?.name || "non sélectionné"}, indicatif +${displayedPrefix}`}
               data-testid="button-select-country"
             >
-              <span className="auth-country-label">Nation</span>
+              <span className="auth-country-label">{countryLabel}</span>
               <span className="auth-country-value">
                 <span className="auth-country-code">+{displayedPrefix}</span>
                 <ChevronDown aria-hidden="true" />
@@ -219,7 +221,10 @@ export default function RegisterPage() {
         selectedCountryCode={selectedCountry}
         open={countryModalOpen}
         onClose={() => setCountryModalOpen(false)}
-        onSelect={(code) => form.setValue("country", code, { shouldValidate: true })}
+        onSelect={(code) => {
+          setHasChosenCountry(true);
+          form.setValue("country", code, { shouldValidate: true });
+        }}
       />
     </AuthPageShell>
   );
