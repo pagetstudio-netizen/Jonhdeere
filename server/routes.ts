@@ -1816,12 +1816,6 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Dépôt DrimPay introuvable" });
       }
       if (deposit.userId !== req.session.userId) return res.status(403).json({ message: "Accès refusé" });
-      if (deposit.status === "approved") {
-        return res.json({ status: deposit.status });
-      }
-      if (!deposit.drimpayReference) return res.json({ status: deposit.status });
-      if (!isDrimPayConfigured()) return res.status(503).json({ message: "DrimPay n'est pas configuré sur le serveur" });
-
       return res.json({ status: deposit.status });
     } catch (error: any) {
       console.error("[drimpay] payin status error:", error?.message || error);
@@ -2032,7 +2026,7 @@ export async function registerRoutes(
       const deposit = await storage.getDeposit(parseInt(getRouteParam(req.params.id)));
       if (!deposit) return res.status(404).json({ message: "Dépôt non trouvé" });
       if (deposit.userId !== req.session.userId) return res.status(403).json({ message: "Accès refusé" });
-      if (deposit.status === "approved" || deposit.status === "rejected") {
+      if (deposit.status === "approved") {
         return res.json({ status: deposit.status });
       }
       if (!deposit.ashtechTransactionId) return res.json({ status: deposit.status });
