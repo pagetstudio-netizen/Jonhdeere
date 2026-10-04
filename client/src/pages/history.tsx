@@ -58,12 +58,12 @@ const getDepositRef = (deposit: Deposit) => {
     deposit.ashtechTransactionId,
     deposit.sendavapayReference,
     deposit.inpayOrderNumber,
+    deposit.omnipayReference,
     deposit.omnipayId,
     deposit.soleaspayReference,
     deposit.soleaspayOrderId,
     deposit.westpayReference,
     deposit.inpayOutTradeNo,
-    deposit.omnipayReference,
     deposit.reference,
   ].find((value) => typeof value === "string" && value.trim());
   return reference?.trim() || `Réf. interne #${deposit.id}`;
@@ -72,9 +72,9 @@ const getDepositRef = (deposit: Deposit) => {
 const getWithdrawalRef = (withdrawal: Withdrawal) => {
   const reference = [
     withdrawal.inpayOrderNumber,
-    withdrawal.omnipayId,
     withdrawal.inpayOutTradeNo,
     withdrawal.omnipayReference,
+    withdrawal.omnipayId,
   ].find((value) => typeof value === "string" && value.trim());
   return reference?.trim() || `Réf. interne #${withdrawal.id}`;
 };
