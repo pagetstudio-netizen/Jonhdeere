@@ -26,6 +26,28 @@ export async function seed() {
     ALTER TABLE "payment_numbers" ADD COLUMN IF NOT EXISTS "payment_link" text
   `).catch(() => undefined);
   await db.execute(sql`
+    ALTER TABLE "deposits"
+      ADD COLUMN IF NOT EXISTS "drimpay_reference" text,
+      ADD COLUMN IF NOT EXISTS "drimpay_order_id" text
+  `);
+  await db.execute(sql`
+    ALTER TABLE "withdrawals"
+      ADD COLUMN IF NOT EXISTS "drimpay_reference" text,
+      ADD COLUMN IF NOT EXISTS "drimpay_external_ref" text
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS "deposits_drimpay_reference_idx" ON "deposits" ("drimpay_reference")
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS "deposits_drimpay_order_id_idx" ON "deposits" ("drimpay_order_id")
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS "withdrawals_drimpay_reference_idx" ON "withdrawals" ("drimpay_reference")
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS "withdrawals_drimpay_external_ref_idx" ON "withdrawals" ("drimpay_external_ref")
+  `);
+  await db.execute(sql`
     DROP TABLE IF EXISTS "withdrawal_fee_payments"
   `).catch(() => undefined);
   await db.execute(sql`

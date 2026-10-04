@@ -129,13 +129,13 @@ export function Current() {
       `}</style>
       <div className="transaction-history-current-list">
         <HistoryCard
-          code="Réf. interne #284"
+          code="deqmsll-w-000284"
           createdAt="2025-12-26T16:16:46"
           amount="9 800 FCFA"
           status="approved"
         />
         <HistoryCard
-          code="Réf. interne #281"
+          code="deqmsll-w-000281"
           createdAt="2025-12-23T09:02:33"
           amount="12 900 FCFA"
           status="approved"

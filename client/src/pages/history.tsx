@@ -5,6 +5,7 @@ import { getCountryByCode, type ApiCountry } from "@/lib/countries";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import EmptyState from "@/components/empty-state";
+import { getTransactionOrderNumber } from "@shared/transaction-order-number";
 
 interface Deposit {
   id: number;
@@ -12,19 +13,6 @@ interface Deposit {
   status: string;
   createdAt: string;
   accountNumber?: string | null;
-  paymentMethod?: string | null;
-  channelName?: string | null;
-  reference?: string | null;
-  soleaspayReference?: string;
-  soleaspayOrderId?: string;
-  inpayOrderNumber?: string;
-  inpayOutTradeNo?: string;
-  omnipayId?: string;
-  omnipayReference?: string;
-  sendavapayReference?: string;
-  westpayReference?: string;
-  ashtechTransactionId?: string;
-  ashtechReference?: string;
 }
 
 interface Withdrawal {
@@ -35,11 +23,6 @@ interface Withdrawal {
   status: string;
   createdAt: string;
   accountNumber?: string | null;
-  paymentMethod?: string | null;
-  inpayOrderNumber?: string;
-  inpayOutTradeNo?: string;
-  omnipayId?: string;
-  omnipayReference?: string;
 }
 
 interface Transaction {
@@ -51,33 +34,6 @@ interface Transaction {
 }
 
 type ActiveTab = "free" | "deposits" | "withdrawals";
-
-const getDepositRef = (deposit: Deposit) => {
-  const reference = [
-    deposit.ashtechReference,
-    deposit.ashtechTransactionId,
-    deposit.sendavapayReference,
-    deposit.inpayOrderNumber,
-    deposit.omnipayReference,
-    deposit.omnipayId,
-    deposit.soleaspayReference,
-    deposit.soleaspayOrderId,
-    deposit.westpayReference,
-    deposit.inpayOutTradeNo,
-    deposit.reference,
-  ].find((value) => typeof value === "string" && value.trim());
-  return reference?.trim() || `Réf. interne #${deposit.id}`;
-};
-
-const getWithdrawalRef = (withdrawal: Withdrawal) => {
-  const reference = [
-    withdrawal.inpayOrderNumber,
-    withdrawal.inpayOutTradeNo,
-    withdrawal.omnipayReference,
-    withdrawal.omnipayId,
-  ].find((value) => typeof value === "string" && value.trim());
-  return reference?.trim() || `Réf. interne #${withdrawal.id}`;
-};
 
 const formatDateTime = (dateString: string) => {
   const date = new Date(dateString);
@@ -139,7 +95,7 @@ function HistoryCard({
   status,
   currency,
   kind,
-  paymentMethod,
+  fallbackDetail,
   accountNumber,
   referenceLabel,
   fees,
@@ -151,7 +107,7 @@ function HistoryCard({
   status: string;
   currency: string;
   kind: "earning" | "deposit" | "withdrawal";
-  paymentMethod: string;
+  fallbackDetail: string;
   accountNumber?: string | null;
   referenceLabel: string;
   fees?: string | number | null;
@@ -159,7 +115,7 @@ function HistoryCard({
 }) {
   const statusInfo = getStatusInfo(status, kind);
   const maskedAccountNumber = maskAccountNumber(accountNumber);
-  const paymentLabel = `${paymentMethod}${maskedAccountNumber ? ` (${maskedAccountNumber})` : ""}`;
+  const paymentLabel = maskedAccountNumber ? `(${maskedAccountNumber})` : fallbackDetail;
 
   return (
     <article className="history-card" data-testid={testId}>
@@ -528,14 +484,14 @@ export default function HistoryPage() {
                   <HistoryCard
                     key={transaction.id}
                     testId={`free-earning-item-${transaction.id}`}
-                    code={`#${transaction.id}`}
+                    code={getTransactionOrderNumber("earning", transaction.id)}
                     createdAt={transaction.createdAt}
                     amount={`+${formatAmount(transaction.amount)}`}
                     status="approved"
                     currency={currency}
                     kind="earning"
-                    paymentMethod={transaction.description || "Free Earnings"}
-                    referenceLabel="Référence"
+                    fallbackDetail="Gains"
+                    referenceLabel="Numéro de commande"
                   />
                 ))}
               </div>
@@ -551,13 +507,13 @@ export default function HistoryPage() {
                   <HistoryCard
                     key={deposit.id}
                     testId={`deposit-item-${deposit.id}`}
-                    code={getDepositRef(deposit)}
+                    code={getTransactionOrderNumber("deposit", deposit.id)}
                     createdAt={deposit.createdAt}
                     amount={formatAmount(deposit.amount)}
                     status={deposit.status}
                     currency={currency}
                     kind="deposit"
-                    paymentMethod={deposit.paymentMethod || deposit.channelName || "Dépôt"}
+                    fallbackDetail="Dépôt"
                     accountNumber={deposit.accountNumber}
                     referenceLabel="Numéro de commande"
                   />
@@ -574,13 +530,13 @@ export default function HistoryPage() {
                 <HistoryCard
                   key={withdrawal.id}
                   testId={`withdrawal-item-${withdrawal.id}`}
-                  code={getWithdrawalRef(withdrawal)}
+                    code={getTransactionOrderNumber("withdrawal", withdrawal.id)}
                   createdAt={withdrawal.createdAt}
                     amount={formatAmount(withdrawal.netAmount ?? withdrawal.amount)}
                   status={withdrawal.status}
                   currency={currency}
                     kind="withdrawal"
-                    paymentMethod={withdrawal.paymentMethod || "Retrait"}
+                    fallbackDetail="Retrait"
                     accountNumber={withdrawal.accountNumber}
                     referenceLabel="Numéro de commande"
                     fees={withdrawal.fees == null ? undefined : formatAmount(withdrawal.fees)}

@@ -1,0 +1,1 @@
+const t={deposit:"d",withdrawal:"w",earning:"e"};function n(e,r){if(!Number.isSafeInteger(r)||r<1)throw new Error("Identifiant de transaction invalide.");return`deqmsll-${t[e]}-${String(r).padStart(6,"0")}`}export{n as g};

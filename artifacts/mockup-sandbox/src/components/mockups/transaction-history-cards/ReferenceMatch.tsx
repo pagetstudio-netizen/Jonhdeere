@@ -15,7 +15,7 @@ function ReferenceCard({ date, amount, orderNumber, fees }: ReferenceCardProps) 
         <span>Transfert terminé</span>
       </div>
       <div className="reference-history-row reference-history-payment">
-        <span>Orange (+2****13)</span>
+        <span>(+2****13)</span>
         <strong>{amount}</strong>
       </div>
       <div className="reference-history-row">
@@ -100,13 +100,13 @@ export function ReferenceMatch() {
         <ReferenceCard
           date="2025-12-26 16:16:46"
           amount="$9800.00"
-          orderNumber="L12345678901234567"
+          orderNumber="deqmsll-w-000843"
           fees="490.00"
         />
         <ReferenceCard
           date="2025-12-23 09:02:33"
           amount="$12900.00"
-          orderNumber="L23456789012345678"
+          orderNumber="deqmsll-w-000812"
           fees="645.00"
         />
       </div>

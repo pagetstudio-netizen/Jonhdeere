@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Check, X, Search, Loader2, Send, RefreshCw } from "lucide-react";
 import type { Withdrawal } from "@shared/schema";
+import { getTransactionOrderNumber } from "@shared/transaction-order-number";
 import EmptyState from "@/components/empty-state";
 
 interface WithdrawalWithUser extends Withdrawal {
@@ -39,6 +40,10 @@ export default function AdminWithdrawals() {
     queryKey: ["/api/settings"],
   });
   const ppayprosPayoutEnabled = platformSettings?.ppayprosPayoutEnabled === "true";
+  const drimpayPayoutCountries = (platformSettings?.drimpayPayoutCountries || "")
+    .split(",")
+    .map((code) => code.trim().toUpperCase())
+    .filter(Boolean);
 
   const withdrawals = allWithdrawals?.filter(w =>
     statusFilter === "all" ? true : w.status === statusFilter
@@ -124,13 +129,48 @@ export default function AdminWithdrawals() {
     onSettled: () => setProcessingId(null),
   });
 
+  const drimpayMutation = useMutation({
+    mutationFn: async ({ id, checkStatus }: { id: number; checkStatus: boolean }) => {
+      setProcessingId(id);
+      const action = checkStatus ? "drimpay/status" : "drimpay";
+      const response = await fetch(`/api/admin/withdrawals/${id}/${action}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || `Erreur ${response.status}`);
+      return { data, checkStatus };
+    },
+    onSuccess: ({ data, checkStatus }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      if (checkStatus) {
+        const status = data.status === "approved"
+          ? "confirmé"
+          : data.status === "rejected"
+            ? "refusé"
+            : "toujours en traitement";
+        toast({ title: "Statut DrimPay vérifié", description: `Le retrait est ${status}.` });
+      } else {
+        toast({ title: "Retrait envoyé à DrimPay" });
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: "Erreur DrimPay", description: error.message, variant: "destructive" });
+    },
+    onSettled: () => setProcessingId(null),
+  });
+
   const filteredWithdrawals = withdrawals?.filter(w =>
     w.accountNumber.includes(filter) ||
     w.user.phone.includes(filter) ||
     w.user.fullName.toLowerCase().includes(filter.toLowerCase()) ||
     ((w as any).inpayOutTradeNo && (w as any).inpayOutTradeNo.toLowerCase().includes(filter.toLowerCase())) ||
     ((w as any).inpayOrderNumber && (w as any).inpayOrderNumber.toLowerCase().includes(filter.toLowerCase())) ||
-    (w.omnipayReference && w.omnipayReference.toLowerCase().includes(filter.toLowerCase()))
+    (w.omnipayReference && w.omnipayReference.toLowerCase().includes(filter.toLowerCase())) ||
+    (w.drimpayReference && w.drimpayReference.toLowerCase().includes(filter.toLowerCase())) ||
+    (w.drimpayExternalRef && w.drimpayExternalRef.toLowerCase().includes(filter.toLowerCase())) ||
+    getTransactionOrderNumber("withdrawal", w.id).includes(filter.toLowerCase())
   ) || [];
 
   return (
@@ -200,6 +240,10 @@ export default function AdminWithdrawals() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">Numéro de commande</p>
+                    <p className="font-mono font-medium text-foreground">{getTransactionOrderNumber("withdrawal", withdrawal.id)}</p>
+                  </div>
                   <div>
                     <p className="text-muted-foreground">Montant demandé</p>
                     <p className="font-medium text-foreground">{withdrawal.amount.toLocaleString()} F</p>
@@ -257,6 +301,18 @@ export default function AdminWithdrawals() {
                       <p className="font-mono font-medium text-foreground">{withdrawal.omnipayId}</p>
                     </div>
                   )}
+                  {withdrawal.drimpayReference && (
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground">Référence DrimPay</p>
+                      <p className="font-mono font-medium text-foreground">{withdrawal.drimpayReference}</p>
+                    </div>
+                  )}
+                  {withdrawal.drimpayExternalRef && (
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground">Référence externe DrimPay</p>
+                      <p className="font-mono font-medium text-foreground">{withdrawal.drimpayExternalRef}</p>
+                    </div>
+                  )}
                 </div>
 
                 {withdrawal.status === "pending" && (
@@ -287,6 +343,21 @@ export default function AdminWithdrawals() {
                           : <><Send className="w-4 h-4 mr-1" /> Envoyer à PPayPros</>}
                       </Button>
                     )}
+                    {platformSettings?.drimpayPayoutEnabled === "true" &&
+                      drimpayPayoutCountries.includes(withdrawal.country.trim().toUpperCase()) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => drimpayMutation.mutate({ id: withdrawal.id, checkStatus: false })}
+                          disabled={processingId === withdrawal.id}
+                          data-testid={`button-send-drimpay-${withdrawal.id}`}
+                        >
+                          {processingId === withdrawal.id
+                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                            : <><Send className="w-4 h-4 mr-1" /> Envoyer à DrimPay</>}
+                        </Button>
+                      )}
                     <Button
                       size="sm"
                       className="flex-1"
@@ -320,6 +391,21 @@ export default function AdminWithdrawals() {
                       {processingId === withdrawal.id
                         ? <Loader2 className="w-4 h-4 animate-spin mr-1" />
                         : <><RefreshCw className="w-4 h-4 mr-1" /> Vérifier le statut PPayPros</>}
+                    </Button>
+                  )}
+                {withdrawal.status === "processing" &&
+                  (withdrawal.drimpayExternalRef || withdrawal.drimpayReference) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => drimpayMutation.mutate({ id: withdrawal.id, checkStatus: true })}
+                      disabled={processingId === withdrawal.id}
+                      data-testid={`button-check-drimpay-${withdrawal.id}`}
+                    >
+                      {processingId === withdrawal.id
+                        ? <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                        : <><RefreshCw className="w-4 h-4 mr-1" /> Vérifier le statut DrimPay</>}
                     </Button>
                   )}
               </CardContent>

@@ -69,6 +69,25 @@ import {
   verifyAshtechWebhookSignature,
 } from "./ashtechpay";
 import {
+  createDrimPayReference,
+  drimPayGetBalance,
+  drimPayGetPayin,
+  drimPayGetPayout,
+  drimPayInitiatePayin,
+  drimPayInitiatePayout,
+  drimPayOperatorsForCountry,
+  getDrimPayOperatorSlug,
+  getDrimPayWebhookSecret,
+  isDrimPayConfigured,
+  isDrimPayCountry,
+  isDrimPayWebhookConfigured,
+  mapDrimPayStatus,
+  normalizeDrimPayPhone,
+  unwrapDrimPayResponse,
+  verifyDrimPayWebhookSignature,
+  DrimPayApiError,
+} from "./drimpay";
+import {
   formatTelegramValue,
   sendTelegramInpayError,
   sendTelegramMessage,
@@ -216,11 +235,50 @@ function updateBlockedIpsCache(values: string[]) {
 }
 // --- end brute-force protection ---
 
+function parseDrimPayOperators(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((operator): operator is string => typeof operator === "string");
+  }
+  if (typeof value !== "string" || !value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((operator) =>
+          typeof operator === "string"
+            ? operator
+            : operator?.name || operator?.operator || operator?.code || "",
+        )
+        .filter((operator): operator is string => typeof operator === "string" && Boolean(operator.trim()));
+    }
+  } catch {
+    // Older country records may contain comma-separated operator names.
+  }
+  return value.split(",").map((operator) => operator.trim()).filter(Boolean);
+}
+
+function isDrimPayCountryEnabled(
+  settings: Record<string, string>,
+  kind: "Payin" | "Payout",
+  country: string,
+) {
+  const normalizedCountry = country.trim().toUpperCase();
+  const enabled = settings[`drimpay${kind}Enabled`] === "true";
+  const countries = (settings[`drimpay${kind}Countries`] || "")
+    .split(",")
+    .map((code) => code.trim().toUpperCase())
+    .filter(Boolean);
+  return enabled && countries.includes(normalizedCountry) && isDrimPayCountry(normalizedCountry);
+}
+
 function getRouteParam(value: string | string[]): string {
   return Array.isArray(value) ? value[0] ?? "" : value;
 }
 
-async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number; amount: number }) {
+async function refundRejectedWithdrawal(
+  withdrawal: { id: number; userId: number; amount: number },
+  provider = "InPay",
+) {
   const user = await storage.getUser(withdrawal.userId);
   if (!user) return;
   await storage.updateUser(user.id, {
@@ -230,7 +288,7 @@ async function refundRejectedWithdrawal(withdrawal: { id: number; userId: number
     userId: user.id,
     type: "withdrawal_refund",
     amount: withdrawal.amount.toString(),
-    description: `Remboursement retrait InPay #${withdrawal.id}`,
+    description: `Remboursement retrait ${provider} #${withdrawal.id}`,
   });
 }
 
@@ -262,6 +320,77 @@ async function creditApprovedDeposit(deposit: {
       `Pays : ${formatTelegramValue(user.country)}`,
     ].join("\n"),
   ).catch((error) => console.error("[telegram] deposit notification failed:", error.message));
+}
+
+async function reconcileDrimPayDeposit(
+  deposit: Awaited<ReturnType<typeof storage.getDeposit>> & {},
+  response: Record<string, any>,
+) {
+  const data = unwrapDrimPayResponse(response);
+  if (data.amount !== undefined && Number(data.amount) !== deposit.amount) {
+    throw new Error("Le montant confirmé par DrimPay ne correspond pas au dépôt.");
+  }
+  if (data.country_code && String(data.country_code).toUpperCase() !== deposit.country.toUpperCase()) {
+    throw new Error("Le pays confirmé par DrimPay ne correspond pas au dépôt.");
+  }
+  if (data.order_id && deposit.drimpayOrderId && String(data.order_id) !== deposit.drimpayOrderId) {
+    throw new Error("La référence de commande DrimPay ne correspond pas au dépôt.");
+  }
+  if (data.reference && deposit.drimpayReference && String(data.reference) !== deposit.drimpayReference) {
+    throw new Error("La référence DrimPay ne correspond pas au dépôt.");
+  }
+
+  const status = mapDrimPayStatus(data.status);
+  if (status === "approved") {
+    const claimed = await storage.claimDepositApproval(deposit.id);
+    if (claimed) await creditApprovedDeposit(claimed);
+  } else if (status === "rejected") {
+    await storage.claimDepositRejection(deposit.id);
+  } else if (deposit.status === "pending") {
+    await storage.updateDeposit(deposit.id, { status: "processing" });
+  }
+  return (await storage.getDeposit(deposit.id)) || deposit;
+}
+
+async function reconcileDrimPayPayout(
+  withdrawal: Withdrawal,
+  response: Record<string, any>,
+) {
+  const data = unwrapDrimPayResponse(response);
+  if (data.amount !== undefined && Number(data.amount) !== withdrawal.netAmount) {
+    throw new Error("Le montant confirmé par DrimPay ne correspond pas au retrait.");
+  }
+  if (data.country_code && String(data.country_code).toUpperCase() !== withdrawal.country.toUpperCase()) {
+    throw new Error("Le pays confirmé par DrimPay ne correspond pas au retrait.");
+  }
+  if (
+    data.external_ref &&
+    withdrawal.drimpayExternalRef &&
+    String(data.external_ref) !== withdrawal.drimpayExternalRef
+  ) {
+    throw new Error("La référence externe DrimPay ne correspond pas au retrait.");
+  }
+  if (
+    data.reference &&
+    withdrawal.drimpayReference &&
+    String(data.reference) !== withdrawal.drimpayReference
+  ) {
+    throw new Error("La référence DrimPay ne correspond pas au retrait.");
+  }
+
+  const status = mapDrimPayStatus(data.status);
+  if (status === "approved" || status === "rejected") {
+    const finalized = await storage.claimWithdrawalFinalization(withdrawal.id, status);
+    if (finalized && status === "rejected") {
+      await refundRejectedWithdrawal(finalized, "DrimPay");
+    }
+  } else if (withdrawal.status !== "approved" && withdrawal.status !== "rejected") {
+    await storage.updateWithdrawal(withdrawal.id, {
+      status: "processing",
+      ...(data.reference ? { drimpayReference: String(data.reference) } : {}),
+    });
+  }
+  return (await storage.getWithdrawal(withdrawal.id)) || withdrawal;
 }
 
 declare module "express-session" {
@@ -304,6 +433,8 @@ const PUBLIC_SETTING_KEYS = new Set([
   "westpayEnabled", "westpayChannelName", "westpayCountries",
   "ppayprosPayinEnabled", "ppayprosPayoutEnabled",
   "ashtechEnabled", "ashtechChannelName", "ashtechCountries",
+  "drimpayPayinEnabled", "drimpayPayoutEnabled",
+  "drimpayPayinCountries", "drimpayPayoutCountries",
   "inpayEnabled", "inpayChannelName", "inpayCountries",
 ]);
 const ADMIN_SETTING_KEYS = new Set([
@@ -1504,6 +1635,142 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/drimpay/operators/:country", requireAuth, async (req, res) => {
+    try {
+      const country = getRouteParam(req.params.country).trim().toUpperCase();
+      if (!isDrimPayConfigured() || !isDrimPayWebhookConfigured()) {
+        return res.status(503).json({ message: "DrimPay n'est pas configuré sur le serveur" });
+      }
+      const settings = await storage.getSettings();
+      if (!isDrimPayCountryEnabled(settings, "Payin", country)) {
+        return res.status(403).json({ message: "DrimPay n'est pas activé pour ce pays" });
+      }
+      const countryRecord = (await storage.getActiveCountries()).find(
+        (item) => item.code.toUpperCase() === country,
+      );
+      if (!countryRecord) return res.status(404).json({ message: "Pays indisponible" });
+
+      const operators = drimPayOperatorsForCountry(
+        country,
+        parseDrimPayOperators(countryRecord.operators),
+      ).map((operator) => ({ ...operator, provider: "drimpay" as const }));
+      res.json({ country, operators });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Impossible de charger les opérateurs DrimPay" });
+    }
+  });
+
+  app.post("/api/drimpay/payin", requireAuth, async (req, res) => {
+    let depositId: number | undefined;
+    try {
+      const user = await storage.getUser(req.session.userId!);
+      if (!user) return res.status(401).json({ message: "Non authentifié" });
+      if (!isDrimPayConfigured() || !isDrimPayWebhookConfigured()) {
+        return res.status(503).json({ message: "DrimPay n'est pas configuré sur le serveur" });
+      }
+
+      const settings = await storage.getSettings();
+      const country = String(req.body?.country || "").trim().toUpperCase();
+      if (!isDrimPayCountryEnabled(settings, "Payin", country)) {
+        return res.status(403).json({ message: "Les dépôts DrimPay ne sont pas activés pour ce pays" });
+      }
+
+      const countryRecord = (await storage.getActiveCountries()).find(
+        (item) => item.code.toUpperCase() === country,
+      );
+      if (!countryRecord) return res.status(400).json({ message: "Pays indisponible" });
+      const configuredOperators = parseDrimPayOperators(countryRecord.operators);
+      const operators = drimPayOperatorsForCountry(country, configuredOperators);
+      const requestedOperator = String(req.body?.operator || req.body?.operatorName || "").trim();
+      const operatorSlug = getDrimPayOperatorSlug(country, requestedOperator);
+      const operator = operators.find((item) => item.id === operatorSlug);
+      if (!operator) return res.status(400).json({ message: "Opérateur non disponible pour DrimPay dans ce pays" });
+
+      const amount = Number(req.body?.amount);
+      const minDeposit = Number.parseInt(settings.minDeposit || "3500", 10);
+      if (!Number.isSafeInteger(amount) || amount <= 0) {
+        return res.status(400).json({ message: "Montant invalide" });
+      }
+      if (amount < minDeposit) {
+        return res.status(400).json({ message: `Montant minimum: ${minDeposit.toLocaleString()} FCFA` });
+      }
+      const phone = normalizeDrimPayPhone(String(req.body?.phone || ""), countryRecord.phonePrefix);
+      const baseUrl = getPublicBaseUrl(req);
+      if (!baseUrl.startsWith("https://")) {
+        return res.status(400).json({ message: "DrimPay exige une URL webhook publique en HTTPS" });
+      }
+
+      const deposit = await storage.createDeposit({
+        userId: user.id,
+        amount,
+        accountName: user.fullName,
+        accountNumber: phone,
+        country,
+        paymentMethod: operator.name,
+        status: "processing",
+      });
+      depositId = deposit.id;
+      const orderId = createDrimPayReference("PAYIN", deposit.id);
+      await storage.updateDeposit(deposit.id, { drimpayOrderId: orderId });
+
+      const initiated = unwrapDrimPayResponse(await drimPayInitiatePayin({
+        amount,
+        currency: countryRecord.currency,
+        country_code: country,
+        operator: operator.id,
+        phone,
+        order_id: orderId,
+        webhook_url: `${baseUrl}/api/webhooks/drimpay`,
+        description: `Dépôt RobotPay #${deposit.id}`,
+        expires_in_minutes: 5,
+      }));
+      const reference = typeof initiated.reference === "string" ? initiated.reference.trim() : "";
+      if (!reference) {
+        throw new Error("DrimPay n'a pas retourné de référence de transaction.");
+      }
+      await storage.updateDeposit(deposit.id, { drimpayReference: reference });
+      const updated = await reconcileDrimPayDeposit(
+        { ...deposit, drimpayOrderId: orderId, drimpayReference: reference },
+        initiated,
+      );
+      return res.status(202).json({
+        depositId: deposit.id,
+        reference,
+        status: updated.status,
+        message: typeof initiated.message === "string" ? initiated.message : "",
+      });
+    } catch (error: any) {
+      if (depositId && error instanceof DrimPayApiError && error.status >= 400 && error.status < 500) {
+        await storage.claimDepositRejection(depositId).catch(() => undefined);
+      }
+      console.error("[drimpay] payin error:", error?.message || error);
+      return res.status(error instanceof DrimPayApiError && error.status >= 400 && error.status < 500 ? 400 : 502)
+        .json({ message: error.message || "Erreur DrimPay" });
+    }
+  });
+
+  app.get("/api/deposits/:id/drimpay-status", requireAuth, async (req, res) => {
+    try {
+      const deposit = await storage.getDeposit(Number.parseInt(getRouteParam(req.params.id), 10));
+      if (!deposit || !deposit.drimpayOrderId) {
+        return res.status(404).json({ message: "Dépôt DrimPay introuvable" });
+      }
+      if (deposit.userId !== req.session.userId) return res.status(403).json({ message: "Accès refusé" });
+      if (deposit.status === "approved" || deposit.status === "rejected") {
+        return res.json({ status: deposit.status });
+      }
+      if (!deposit.drimpayReference) return res.json({ status: deposit.status });
+      if (!isDrimPayConfigured()) return res.status(503).json({ message: "DrimPay n'est pas configuré sur le serveur" });
+
+      const providerStatus = await drimPayGetPayin(deposit.drimpayReference);
+      const updated = await reconcileDrimPayDeposit(deposit, providerStatus);
+      return res.json({ status: updated.status });
+    } catch (error: any) {
+      console.error("[drimpay] payin status error:", error?.message || error);
+      return res.status(502).json({ message: error.message || "Impossible de vérifier le dépôt DrimPay" });
+    }
+  });
+
   // ── AshtechPay Direct API ───────────────────────────────────────────────────
   app.get("/api/ashtechpay/countries", requireAuth, async (_req, res) => {
     try {
@@ -1945,6 +2212,70 @@ export async function registerRoutes(
     } catch (error: any) {
       console.error("[sendavapay] status check error:", error);
       res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/webhooks/drimpay", async (req, res) => {
+    try {
+      if (!isDrimPayWebhookConfigured()) {
+        return res.status(503).json({ message: "Webhook DrimPay non configuré" });
+      }
+      const rawBody = (req as any).rawBody as Buffer | undefined;
+      const signature = String(req.headers["x-drimpay-signature"] || "");
+      const timestamp = String(req.headers["x-drimpay-timestamp"] || "");
+      const secret = getDrimPayWebhookSecret();
+      if (!verifyDrimPayWebhookSignature(rawBody, signature, secret, timestamp || undefined)) {
+        return res.status(401).json({ message: "Signature DrimPay invalide" });
+      }
+
+      const rawPayload = req.body && typeof req.body === "object"
+        ? req.body as Record<string, any>
+        : {};
+      const payload = unwrapDrimPayResponse(rawPayload);
+      const event = String(
+        payload.event || req.headers["x-drimpay-event"] || "",
+      ).trim().toLowerCase();
+      const callbackStatus = String(payload.status || event.split(".")[1] || "").trim().toLowerCase();
+      if (!event.startsWith("payin.") && !event.startsWith("payout.")) {
+        return res.status(400).json({ message: "Événement DrimPay inconnu" });
+      }
+
+      if (event.startsWith("payout.")) {
+        const providerReference = String(payload.reference || "").trim();
+        const externalReference = String(payload.external_ref || payload.order_id || "").trim();
+        if (!providerReference && !externalReference) {
+          return res.status(400).json({ message: "Référence de retrait DrimPay manquante" });
+        }
+        const withdrawal = (
+          providerReference
+            ? await storage.getWithdrawalByDrimPayReference(providerReference)
+            : undefined
+        ) || await storage.getWithdrawalByDrimPayReference(externalReference);
+        if (!withdrawal) return res.status(200).json({ received: true });
+        await reconcileDrimPayPayout(withdrawal, { ...payload, status: callbackStatus });
+        return res.status(200).json({ received: true });
+      }
+
+      const providerReference = String(payload.reference || "").trim();
+      const orderId = String(payload.order_id || payload.external_ref || "").trim();
+      if (!providerReference && !orderId) {
+        return res.status(400).json({ message: "Référence de dépôt DrimPay manquante" });
+      }
+      const deposit = (
+        providerReference
+          ? await storage.getDepositByDrimPayReference(providerReference)
+          : undefined
+      ) || (
+        orderId
+          ? await storage.getDepositByDrimPayOrderId(orderId)
+          : undefined
+      );
+      if (!deposit) return res.status(200).json({ received: true });
+      await reconcileDrimPayDeposit(deposit, { ...payload, status: callbackStatus });
+      return res.status(200).json({ received: true });
+    } catch (error: any) {
+      console.error("[drimpay webhook] processing error:", error?.message || error);
+      return res.status(400).json({ message: error.message || "Webhook DrimPay invalide" });
     }
   });
 
@@ -2582,6 +2913,27 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/deposits/:id/drimpay/status", requireAdmin, async (req, res) => {
+    try {
+      const deposit = await storage.getDeposit(Number.parseInt(getRouteParam(req.params.id), 10));
+      if (!deposit || !deposit.drimpayOrderId) {
+        return res.status(404).json({ message: "Dépôt DrimPay introuvable" });
+      }
+      if (deposit.status === "approved" || deposit.status === "rejected") {
+        return res.json({ status: deposit.status });
+      }
+      if (!deposit.drimpayReference || !isDrimPayConfigured()) {
+        return res.status(400).json({ message: "Référence ou configuration DrimPay manquante" });
+      }
+      const providerStatus = await drimPayGetPayin(deposit.drimpayReference);
+      const updated = await reconcileDrimPayDeposit(deposit, providerStatus);
+      return res.json({ status: updated.status });
+    } catch (error: any) {
+      console.error("[drimpay] admin payin status error:", error?.message || error);
+      return res.status(502).json({ message: error.message || "Impossible de vérifier le dépôt DrimPay" });
+    }
+  });
+
   app.get("/api/admin/deposits/soleaspay-stats", requireAdmin, async (req, res) => {
     try {
       const allDeposits = await storage.getDeposits();
@@ -2802,6 +3154,118 @@ export async function registerRoutes(
       });
       console.error("[inpay] payout error:", error);
       res.status(400).json({ message: error.message || "Erreur d'envoi InPay" });
+    }
+  });
+
+  app.post("/api/admin/withdrawals/:id/drimpay", requireAdmin, async (req, res) => {
+    const withdrawalId = Number.parseInt(getRouteParam(req.params.id), 10);
+    let externalRef: string | undefined;
+    try {
+      const withdrawal = await storage.getWithdrawal(withdrawalId);
+      if (!withdrawal) return res.status(404).json({ message: "Retrait non trouvé" });
+      if (withdrawal.status !== "pending") {
+        return res.status(409).json({ message: "Ce retrait a déjà été traité ou envoyé." });
+      }
+      if (!isDrimPayConfigured() || !isDrimPayWebhookConfigured()) {
+        return res.status(503).json({ message: "DrimPay n'est pas configuré sur le serveur" });
+      }
+
+      const settings = await storage.getSettings();
+      const country = withdrawal.country.trim().toUpperCase();
+      if (!isDrimPayCountryEnabled(settings, "Payout", country)) {
+        return res.status(403).json({ message: `Les retraits DrimPay ne sont pas activés pour ${country}` });
+      }
+      const countryRecord = (await storage.getActiveCountries()).find(
+        (item) => item.code.toUpperCase() === country,
+      );
+      if (!countryRecord) return res.status(400).json({ message: "Pays indisponible" });
+
+      const operators = drimPayOperatorsForCountry(
+        country,
+        parseDrimPayOperators(countryRecord.operators),
+      );
+      const operatorSlug = getDrimPayOperatorSlug(country, withdrawal.paymentMethod);
+      const operator = operators.find((item) => item.id === operatorSlug);
+      if (!operator) {
+        return res.status(400).json({ message: "Opérateur de retrait non disponible dans DrimPay" });
+      }
+      const phone = normalizeDrimPayPhone(withdrawal.accountNumber, countryRecord.phonePrefix);
+      const baseUrl = getPublicBaseUrl(req);
+      if (!baseUrl.startsWith("https://")) {
+        return res.status(400).json({ message: "DrimPay exige une URL webhook publique en HTTPS" });
+      }
+
+      externalRef = `DRIMPAY-PAYOUT-${withdrawal.id}`;
+      const claimed = await storage.claimDrimPayWithdrawal(withdrawal.id, externalRef);
+      if (!claimed) return res.status(409).json({ message: "Ce retrait est déjà en cours de traitement." });
+
+      const initiated = unwrapDrimPayResponse(await drimPayInitiatePayout({
+        amount: withdrawal.netAmount,
+        currency: countryRecord.currency,
+        country_code: country,
+        operator: operator.id,
+        phone,
+        external_ref: externalRef,
+        webhook_url: `${baseUrl}/api/webhooks/drimpay`,
+        description: `Retrait RobotPay #${withdrawal.id}`,
+      }));
+      if (initiated.external_ref && String(initiated.external_ref) !== externalRef) {
+        throw new Error("DrimPay a retourné une référence externe différente.");
+      }
+      const providerReference = typeof initiated.reference === "string"
+        ? initiated.reference.trim()
+        : "";
+      if (providerReference) {
+        await storage.updateWithdrawal(withdrawal.id, { drimpayReference: providerReference });
+      }
+      const current = await storage.getWithdrawal(withdrawal.id);
+      if (!current) throw new Error("Retrait introuvable après l'envoi DrimPay.");
+      const updated = await reconcileDrimPayPayout(current, initiated);
+      await storage.logAdminAction(
+        req.session.userId!,
+        "send_withdrawal_to_drimpay",
+        withdrawal.userId,
+        `Retrait ${withdrawal.id} envoyé à DrimPay (${country})`,
+      );
+      return res.json(updated);
+    } catch (error: any) {
+      if (
+        externalRef &&
+        error instanceof DrimPayApiError &&
+        error.status >= 400 &&
+        error.status < 500
+      ) {
+        await storage.releaseDrimPayWithdrawal(withdrawalId, externalRef).catch(() => undefined);
+      }
+      console.error("[drimpay] payout error:", error?.message || error);
+      return res.status(error instanceof DrimPayApiError && error.status >= 400 && error.status < 500 ? 400 : 502)
+        .json({
+          message: error.message || "Erreur d'envoi DrimPay",
+          statusCheckRequired: Boolean(externalRef) && !(error instanceof DrimPayApiError && error.status >= 400 && error.status < 500),
+        });
+    }
+  });
+
+  app.post("/api/admin/withdrawals/:id/drimpay/status", requireAdmin, async (req, res) => {
+    try {
+      const withdrawal = await storage.getWithdrawal(Number.parseInt(getRouteParam(req.params.id), 10));
+      if (!withdrawal) return res.status(404).json({ message: "Retrait non trouvé" });
+      if (!withdrawal.drimpayExternalRef && !withdrawal.drimpayReference) {
+        return res.status(400).json({ message: "Ce retrait ne possède pas de référence DrimPay." });
+      }
+      if (!isDrimPayConfigured()) {
+        return res.status(503).json({ message: "DrimPay n'est pas configuré sur le serveur" });
+      }
+      if (withdrawal.status === "approved" || withdrawal.status === "rejected") {
+        return res.json(withdrawal);
+      }
+      const reference = withdrawal.drimpayReference || withdrawal.drimpayExternalRef!;
+      const providerStatus = await drimPayGetPayout(reference);
+      const updated = await reconcileDrimPayPayout(withdrawal, providerStatus);
+      return res.json(updated);
+    } catch (error: any) {
+      console.error("[drimpay] payout status error:", error?.message || error);
+      return res.status(502).json({ message: error.message || "Impossible de vérifier le retrait DrimPay." });
     }
   });
 
@@ -3183,6 +3647,31 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/drimpay/balance/:country", requireAdmin, async (req, res) => {
+    const country = getRouteParam(req.params.country).trim().toUpperCase();
+    try {
+      if (!isDrimPayConfigured()) {
+        return res.status(503).json({ message: "DrimPay n'est pas configuré sur le serveur" });
+      }
+      if (!isDrimPayCountry(country)) {
+        return res.status(400).json({ message: "Pays non pris en charge par DrimPay" });
+      }
+      const result = unwrapDrimPayResponse(await drimPayGetBalance(country));
+      if (result.balance === undefined || result.balance === null) {
+        return res.status(502).json({ message: "DrimPay n'a pas retourné le solde du portefeuille." });
+      }
+      return res.json({
+        country,
+        balance: result.balance,
+        currency: result.currency || "",
+        active: result.active === true,
+      });
+    } catch (error: any) {
+      console.error("[drimpay] balance error:", error?.message || error);
+      return res.status(502).json({ message: error.message || "Impossible de consulter le solde DrimPay" });
+    }
+  });
+
   app.get("/api/admin/inpay/balance/:country", requireAdmin, async (req, res) => {
     const country = String(req.params.country).trim().toUpperCase();
     try {
@@ -3406,12 +3895,19 @@ export async function registerRoutes(
       const enabledCodes = (value: string | undefined) =>
         (value || "").split(",").map(code => code.trim().toUpperCase()).filter(Boolean);
       const ashtechCountries = enabledCodes(settings.ashtechCountries);
-      const providers: Array<{ provider: "ashtech" | "sendavapay"; name: string }> = [];
+      const providers: Array<{ provider: "ashtech" | "sendavapay" | "drimpay"; name: string }> = [];
       if (settings.ashtechEnabled === "true" && ashtechCountries.includes(country)) {
         providers.push({ provider: "ashtech", name: settings.ashtechChannelName || "AshtechPay" });
       }
       if (settings.sendavapayEnabled === "true") {
         providers.push({ provider: "sendavapay", name: settings.sendavapayChannelName || "SendavaPay" });
+      }
+      if (
+        isDrimPayConfigured() &&
+        isDrimPayWebhookConfigured() &&
+        isDrimPayCountryEnabled(settings, "Payin", country)
+      ) {
+        providers.push({ provider: "drimpay", name: "DrimPay" });
       }
       if (providers.length > 0) {
         return res.json({ ...providers[0], providers });

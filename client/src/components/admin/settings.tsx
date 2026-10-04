@@ -37,6 +37,15 @@ const INPAY_COUNTRIES = [
   { code: "UG", name: "Ouganda" },
   { code: "ZA", name: "Afrique du Sud" },
 ] as const;
+const DRIMPAY_COUNTRIES = [
+  { code: "TG", name: "Togo" },
+  { code: "BJ", name: "Bénin" },
+  { code: "BF", name: "Burkina Faso" },
+  { code: "ML", name: "Mali" },
+  { code: "SN", name: "Sénégal" },
+  { code: "CI", name: "Côte d'Ivoire" },
+  { code: "CM", name: "Cameroun" },
+] as const;
 
 const settingsSchema = z.object({
   supportLink: z.string().min(5, "Lien requis"),
@@ -78,6 +87,10 @@ const settingsSchema = z.object({
   ashtechEnabled: z.boolean(),
   ashtechChannelName: z.string().min(1, "Nom requis"),
   ashtechCountries: z.string(),
+  drimpayPayinEnabled: z.boolean(),
+  drimpayPayoutEnabled: z.boolean(),
+  drimpayPayinCountries: z.string(),
+  drimpayPayoutCountries: z.string(),
   inpayEnabled: z.boolean(),
   inpayChannelName: z.string().min(1, "Nom requis"),
   inpayCountries: z.string(),
@@ -151,6 +164,10 @@ export default function AdminSettings({ isSuperAdmin }: AdminSettingsProps) {
       ashtechEnabled: true,
       ashtechChannelName: "AshtechPay",
       ashtechCountries: "BF,TG,CM,BJ",
+      drimpayPayinEnabled: false,
+      drimpayPayoutEnabled: false,
+      drimpayPayinCountries: "",
+      drimpayPayoutCountries: "",
       inpayEnabled: false,
       inpayChannelName: "InPay",
       inpayCountries: "",
@@ -200,6 +217,10 @@ export default function AdminSettings({ isSuperAdmin }: AdminSettingsProps) {
         ashtechEnabled: settings.ashtechEnabled === "true",
         ashtechChannelName: settings.ashtechChannelName || "AshtechPay",
         ashtechCountries: settings.ashtechCountries || "",
+        drimpayPayinEnabled: settings.drimpayPayinEnabled === "true",
+        drimpayPayoutEnabled: settings.drimpayPayoutEnabled === "true",
+        drimpayPayinCountries: settings.drimpayPayinCountries || "",
+        drimpayPayoutCountries: settings.drimpayPayoutCountries || "",
         inpayEnabled: settings.inpayEnabled === "true",
         inpayChannelName: settings.inpayChannelName || "InPay",
         inpayCountries: settings.inpayCountries || "",
@@ -224,6 +245,8 @@ export default function AdminSettings({ isSuperAdmin }: AdminSettingsProps) {
         ppayprosPayinEnabled: String(data.ppayprosPayinEnabled),
         ppayprosPayoutEnabled: String(data.ppayprosPayoutEnabled),
         ashtechEnabled: String(data.ashtechEnabled),
+        drimpayPayinEnabled: String(data.drimpayPayinEnabled),
+        drimpayPayoutEnabled: String(data.drimpayPayoutEnabled),
         inpayEnabled: String(data.inpayEnabled),
       };
       const response = await apiRequest("POST", "/api/admin/settings", serialized);
@@ -246,6 +269,21 @@ export default function AdminSettings({ isSuperAdmin }: AdminSettingsProps) {
   });
 
   const [inpayBalances, setInpayBalances] = useState<Record<string, string>>({});
+  const [drimpayBalances, setDrimpayBalances] = useState<Record<string, string>>({});
+  const drimpayBalanceMutation = useMutation({
+    mutationFn: async (country: string) => {
+      const response = await apiRequest("GET", `/api/admin/drimpay/balance/${country}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Solde DrimPay indisponible");
+      return { country, balance: String(data.balance), currency: String(data.currency || "") };
+    },
+    onSuccess: ({ country, balance, currency }) => {
+      setDrimpayBalances((current) => ({ ...current, [country]: `${balance} ${currency}`.trim() }));
+    },
+    onError: (error: any) => {
+      toast({ title: "Erreur DrimPay", description: error.message, variant: "destructive" });
+    },
+  });
   const inpayBalanceMutation = useMutation({
     mutationFn: async (country: string) => {
       const response = await apiRequest("GET", `/api/admin/inpay/balance/${country}`);
@@ -692,6 +730,88 @@ export default function AdminSettings({ isSuperAdmin }: AdminSettingsProps) {
               <p>• <code className="bg-emerald-100 px-1 rounded">/api/webhooks/ppaypros/payin</code></p>
               <p>• <code className="bg-emerald-100 px-1 rounded">/api/webhooks/ppaypros/payout</code></p>
               <p className="font-semibold text-red-600 mt-1">Les identifiants ne sont jamais enregistrés dans les paramètres du panel.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── DrimPay ── */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Zap className="w-5 h-5 text-cyan-600" />
+              DrimPay — Dépôts et retraits Mobile Money
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-xl border p-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Activer les dépôts DrimPay</p>
+                <p className="text-xs text-gray-500">Ajoute DrimPay comme canal de paiement RobotPay pour les pays sélectionnés.</p>
+              </div>
+              <FormField control={form.control} name="drimpayPayinEnabled" render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormLabel className="text-xs text-gray-500">{field.value ? "Actif" : "Désactivé"}</FormLabel>
+                  <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                </FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="drimpayPayinCountries" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pays autorisés pour les dépôts</FormLabel>
+                <FormControl><Input {...field} placeholder="TG,BJ,BF,ML,SN,CI,CM" /></FormControl>
+                <FormDescription className="text-xs">Codes pays séparés par des virgules. Le pays doit aussi être actif et avoir un opérateur compatible configuré.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <div className="flex items-center justify-between rounded-xl border p-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Activer les retraits DrimPay</p>
+                <p className="text-xs text-gray-500">Ajoute l’envoi et la vérification des retraits en attente.</p>
+              </div>
+              <FormField control={form.control} name="drimpayPayoutEnabled" render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0">
+                  <FormLabel className="text-xs text-gray-500">{field.value ? "Actif" : "Désactivé"}</FormLabel>
+                  <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                </FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="drimpayPayoutCountries" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pays autorisés pour les retraits</FormLabel>
+                <FormControl><Input {...field} placeholder="TG,BJ,BF,ML,SN,CI,CM" /></FormControl>
+                <FormDescription className="text-xs">Les opérateurs de retrait sont limités au catalogue déjà configuré pour chaque pays.</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-gray-800">Soldes des wallets par pays</p>
+              {DRIMPAY_COUNTRIES.map(({ code, name }) => (
+                <div key={code} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{name} ({code})</p>
+                    {drimpayBalances[code] !== undefined && (
+                      <p className="text-xs text-cyan-700">Solde DrimPay : {drimpayBalances[code]}</p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => drimpayBalanceMutation.mutate(code)}
+                    disabled={drimpayBalanceMutation.isPending}
+                  >
+                    {drimpayBalanceMutation.isPending && drimpayBalanceMutation.variables === code
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : "Solde"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-3 text-xs text-cyan-900 space-y-1">
+              <p className="font-semibold">Secrets serveur requis pour les dépôts et retraits :</p>
+              <p>• <code className="rounded bg-cyan-100 px-1">DRIMPAY_API_KEY</code> — clé sandbox ou live DrimPay</p>
+              <p>• <code className="rounded bg-cyan-100 px-1">DRIMPAY_WEBHOOK_SECRET</code> — secret de signature des notifications</p>
+              <p>Configurez l’URL webhook DrimPay : <code className="rounded bg-cyan-100 px-1">/api/webhooks/drimpay</code></p>
+              <p className="font-semibold text-red-600">Ne saisissez jamais ces clés dans ce formulaire. Les activations restent sans effet tant que les Secrets serveur ne sont pas configurés.</p>
             </div>
           </CardContent>
         </Card>

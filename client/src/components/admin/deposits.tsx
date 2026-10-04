@@ -8,8 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Check, X, Ban, Search, Loader2, ImageIcon, MessageSquare } from "lucide-react";
+import { Check, X, Ban, Search, Loader2, ImageIcon, MessageSquare, RefreshCw } from "lucide-react";
 import type { Deposit } from "@shared/schema";
+import { getTransactionOrderNumber } from "@shared/transaction-order-number";
 import EmptyState from "@/components/empty-state";
 
 interface DepositWithUser extends Deposit {
@@ -20,26 +21,6 @@ interface DepositWithUser extends Deposit {
     country: string;
     isPromoter: boolean;
   };
-}
-
-// Build a unified reference string for a deposit (mirrors history.tsx logic)
-function getDepositRef(d: DepositWithUser): string {
-  const sv = (d as any).sendavapayReference;
-  const omRef = (d as any).omnipayReference;
-  const omId  = (d as any).omnipayId;
-  const soRef = (d as any).soleaspayReference;
-  const soOrd = (d as any).soleaspayOrderId;
-  const plain = (d as any).reference;
-  if (sv)    return sv.startsWith("sdk")    ? sv    : `sdk${sv}`;
-  if (omRef) return omRef.startsWith("sdk") ? omRef : `sdk${omRef}`;
-  if (omId)  return `sdk${omId}`;
-  if (soRef) return soRef.startsWith("sdk") ? soRef : `sdk${soRef}`;
-  if (soOrd) return `sdk${soOrd}`;
-  if (plain) return plain;
-  // fallback: generated from id + date
-  const dt = new Date(d.createdAt);
-  const pad = (n: number, l = 2) => String(n).padStart(l, "0");
-  return `sdk${String(dt.getFullYear()).slice(2)}${pad(dt.getMonth()+1)}${pad(dt.getDate())}${pad(dt.getHours())}${pad(dt.getMinutes())}D${pad(d.id, 4)}`;
 }
 
 export default function AdminDeposits() {
@@ -90,6 +71,29 @@ export default function AdminDeposits() {
     onSettled: () => setProcessingId(null),
   });
 
+  const drimpayStatusMutation = useMutation({
+    mutationFn: async (id: number) => {
+      setProcessingId(id);
+      const response = await fetch(`/api/admin/deposits/${id}/drimpay/status`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || `Erreur ${response.status}`);
+      return data as { status: string };
+    },
+    onSuccess: ({ status }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/deposits"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      const label = status === "approved" ? "confirmé" : status === "rejected" ? "refusé" : "toujours en traitement";
+      toast({ title: "Statut DrimPay vérifié", description: `Le dépôt est ${label}.` });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erreur DrimPay", description: error.message, variant: "destructive" });
+    },
+    onSettled: () => setProcessingId(null),
+  });
+
   const filteredDeposits = deposits?.filter(d =>
     d.accountNumber.includes(filter) ||
     d.user.phone.includes(filter) ||
@@ -97,7 +101,10 @@ export default function AdminDeposits() {
     (d.reference && d.reference.toLowerCase().includes(filter.toLowerCase())) ||
     ((d as any).inpayOutTradeNo && (d as any).inpayOutTradeNo.toLowerCase().includes(filter.toLowerCase())) ||
     ((d as any).inpayOrderNumber && (d as any).inpayOrderNumber.toLowerCase().includes(filter.toLowerCase())) ||
+    ((d as any).drimpayReference && (d as any).drimpayReference.toLowerCase().includes(filter.toLowerCase())) ||
+    ((d as any).drimpayOrderId && (d as any).drimpayOrderId.toLowerCase().includes(filter.toLowerCase())) ||
     ((d as any).channelName && (d as any).channelName.toLowerCase().includes(filter.toLowerCase())) ||
+    getTransactionOrderNumber("deposit", d.id).includes(filter.toLowerCase()) ||
     String(d.id).includes(filter)
   ) || [];
 
@@ -149,6 +156,7 @@ export default function AdminDeposits() {
           filteredDeposits.map((deposit) => {
             const isManual = !!(deposit as any).paymentNumberId || !!(deposit as any).channelName;
             const isAshtech = !!(deposit as any).ashtechTransactionId || String((deposit as any).ashtechReference || "").startsWith("paget-studio-");
+            const isDrimPay = !!(deposit as any).drimpayReference || !!(deposit as any).drimpayOrderId;
             const ashtechExpired = isAshtech && (deposit.status === "rejected" || Date.now() - new Date(deposit.createdAt).getTime() >= 3 * 60 * 60 * 1000);
             return (
               <Card key={deposit.id} className={deposit.status === "pending" ? "border-yellow-400/50" : ""}>
@@ -174,6 +182,10 @@ export default function AdminDeposits() {
 
                   {/* Main info */}
                   <div className="grid grid-cols-2 gap-2 text-sm bg-secondary/50 rounded-xl p-3">
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground text-xs">Numéro de commande</p>
+                      <p className="font-mono font-medium">{getTransactionOrderNumber("deposit", deposit.id)}</p>
+                    </div>
                     <div>
                       <p className="text-muted-foreground text-xs">Montant</p>
                       <p className="font-bold text-lg text-primary">{deposit.amount.toLocaleString()} F</p>
@@ -228,6 +240,18 @@ export default function AdminDeposits() {
                         <p className="font-mono font-medium">{(deposit as any).inpayOrderNumber}</p>
                       </div>
                     )}
+                    {(deposit as any).drimpayReference && (
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground text-xs">Référence DrimPay</p>
+                        <p className="font-mono font-medium">{(deposit as any).drimpayReference}</p>
+                      </div>
+                    )}
+                    {(deposit as any).drimpayOrderId && (
+                      <div className="col-span-2">
+                        <p className="text-muted-foreground text-xs">N° commande DrimPay</p>
+                        <p className="font-mono font-medium">{(deposit as any).drimpayOrderId}</p>
+                      </div>
+                    )}
                     {isAshtech && ashtechExpired && deposit.status !== "approved" && (
                       <div className="col-span-2 rounded-lg bg-red-50 dark:bg-red-950 p-2 text-xs text-red-700 dark:text-red-300">
                         Transaction non confirmée après 3 heures. Vous pouvez la valider manuellement après vérification.
@@ -270,6 +294,20 @@ export default function AdminDeposits() {
                   {/* Actions */}
                   {(deposit.status === "pending" || deposit.status === "processing" || (isAshtech && deposit.status === "rejected")) && (
                     <div className="flex gap-2">
+                      {isDrimPay && deposit.status !== "rejected" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => drimpayStatusMutation.mutate(deposit.id)}
+                          disabled={processingId === deposit.id}
+                          data-testid={`button-check-drimpay-deposit-${deposit.id}`}
+                        >
+                          {processingId === deposit.id
+                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                            : <><RefreshCw className="w-4 h-4 mr-1" />Vérifier DrimPay</>}
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         className="flex-1 bg-green-600 hover:bg-green-700 text-white"

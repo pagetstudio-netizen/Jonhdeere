@@ -39,6 +39,8 @@ export interface IStorage {
   createDeposit(data: Partial<Deposit>): Promise<Deposit>;
   getDeposit(id: number): Promise<Deposit | undefined>;
   getDepositBySendavapayReference(reference: string): Promise<Deposit | undefined>;
+  getDepositByDrimPayReference(reference: string): Promise<Deposit | undefined>;
+  getDepositByDrimPayOrderId(orderId: string): Promise<Deposit | undefined>;
   getDepositByInpayOutTradeNo(reference: string): Promise<Deposit | undefined>;
   getDepositByWestpayReference(reference: string): Promise<Deposit | undefined>;
   getDepositByAshtechReference(reference: string): Promise<Deposit | undefined>;
@@ -59,6 +61,9 @@ export interface IStorage {
   getUserWithdrawals(userId: number): Promise<Withdrawal[]>;
   getWithdrawal(id: number): Promise<Withdrawal | undefined>;
   getWithdrawalByInpayOutTradeNo(reference: string): Promise<Withdrawal | undefined>;
+  getWithdrawalByDrimPayReference(reference: string): Promise<Withdrawal | undefined>;
+  claimDrimPayWithdrawal(id: number, externalRef: string): Promise<Withdrawal | undefined>;
+  releaseDrimPayWithdrawal(id: number, externalRef: string): Promise<Withdrawal | undefined>;
   claimPpayProsWithdrawal(id: number, merchantOrderNo: string): Promise<Withdrawal | undefined>;
   releasePpayProsWithdrawal(id: number, merchantOrderNo: string): Promise<Withdrawal | undefined>;
   updateWithdrawal(id: number, data: Partial<Withdrawal>): Promise<Withdrawal>;
@@ -533,6 +538,16 @@ export class DatabaseStorage implements IStorage {
     return deposit;
   }
 
+  async getDepositByDrimPayReference(reference: string): Promise<Deposit | undefined> {
+    const [deposit] = await db.select().from(deposits).where(eq(deposits.drimpayReference, reference));
+    return deposit;
+  }
+
+  async getDepositByDrimPayOrderId(orderId: string): Promise<Deposit | undefined> {
+    const [deposit] = await db.select().from(deposits).where(eq(deposits.drimpayOrderId, orderId));
+    return deposit;
+  }
+
   async getDepositByInpayOutTradeNo(reference: string): Promise<Deposit | undefined> {
     const [deposit] = await db.select().from(deposits).where(eq(deposits.inpayOutTradeNo, reference));
     return deposit;
@@ -730,6 +745,38 @@ export class DatabaseStorage implements IStorage {
 
   async getWithdrawalByInpayOutTradeNo(reference: string): Promise<Withdrawal | undefined> {
     const [withdrawal] = await db.select().from(withdrawals).where(eq(withdrawals.inpayOutTradeNo, reference));
+    return withdrawal;
+  }
+
+  async getWithdrawalByDrimPayReference(reference: string): Promise<Withdrawal | undefined> {
+    const [withdrawal] = await db.select().from(withdrawals).where(or(
+      eq(withdrawals.drimpayReference, reference),
+      eq(withdrawals.drimpayExternalRef, reference),
+    ));
+    return withdrawal;
+  }
+
+  async claimDrimPayWithdrawal(id: number, externalRef: string): Promise<Withdrawal | undefined> {
+    const [withdrawal] = await db.update(withdrawals)
+      .set({ status: "processing", drimpayExternalRef: externalRef, drimpayReference: null })
+      .where(and(
+        eq(withdrawals.id, id),
+        eq(withdrawals.status, "pending"),
+        isNull(withdrawals.drimpayExternalRef),
+      ))
+      .returning();
+    return withdrawal;
+  }
+
+  async releaseDrimPayWithdrawal(id: number, externalRef: string): Promise<Withdrawal | undefined> {
+    const [withdrawal] = await db.update(withdrawals)
+      .set({ status: "pending", drimpayExternalRef: null, drimpayReference: null })
+      .where(and(
+        eq(withdrawals.id, id),
+        eq(withdrawals.status, "processing"),
+        eq(withdrawals.drimpayExternalRef, externalRef),
+      ))
+      .returning();
     return withdrawal;
   }
 
