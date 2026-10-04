@@ -1,219 +1,225 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getCountryByCode } from "@/lib/countries";
-import { ChevronLeft, Loader2, RefreshCw } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getCountryByCode, type ApiCountry } from "@/lib/countries";
+import { ChevronLeft, Loader2 } from "lucide-react";
 import { Link } from "wouter";
-import { useToast } from "@/hooks/use-toast";
-
 import EmptyState from "@/components/empty-state";
 
 interface Deposit {
   id: number;
-  userId: number;
   amount: string;
   status: string;
-  paymentMethod: string;
   createdAt: string;
+  reference?: string | null;
   soleaspayReference?: string;
   soleaspayOrderId?: string;
+  inpayOrderNumber?: string;
+  inpayOutTradeNo?: string;
   omnipayId?: string;
   omnipayReference?: string;
   sendavapayReference?: string;
+  westpayReference?: string;
+  ashtechTransactionId?: string;
+  ashtechReference?: string;
 }
 
 interface Withdrawal {
   id: number;
-  userId: number;
   amount: string;
-  netAmount: string;
   status: string;
   createdAt: string;
-  sendavapayReference?: string;
+  inpayOrderNumber?: string;
+  inpayOutTradeNo?: string;
+  omnipayId?: string;
+  omnipayReference?: string;
 }
 
 interface Transaction {
   id: number;
-  userId: number;
   type: string;
   amount: string;
-  description: string;
   createdAt: string;
 }
 
-type ActiveTab = "balance" | "deposits" | "withdrawals";
-
-const CARD_GREEN = "#43cf18";
-const CARD_BACKGROUND = "#f8f8ff";
-
-const makeRef = (prefix: "D" | "W", id: number, date: string) => {
-  const d = new Date(date);
-  const yy = String(d.getFullYear()).slice(2);
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  const seq = String(id).padStart(4, "0");
-  return `sdk${yy}${mm}${dd}${hh}${min}${prefix}${seq}`;
-};
+type ActiveTab = "free" | "deposits" | "withdrawals";
 
 const getDepositRef = (deposit: Deposit) => {
-  const reference =
-    deposit.sendavapayReference ||
-    deposit.omnipayReference ||
-    deposit.omnipayId ||
-    deposit.soleaspayReference ||
-    deposit.soleaspayOrderId;
-  if (reference) return reference.startsWith("sdk") ? reference : `sdk${reference}`;
-  return makeRef("D", deposit.id, deposit.createdAt);
+  const reference = [
+    deposit.ashtechReference,
+    deposit.ashtechTransactionId,
+    deposit.sendavapayReference,
+    deposit.inpayOrderNumber,
+    deposit.omnipayId,
+    deposit.soleaspayReference,
+    deposit.soleaspayOrderId,
+    deposit.westpayReference,
+    deposit.inpayOutTradeNo,
+    deposit.omnipayReference,
+    deposit.reference,
+  ].find((value) => typeof value === "string" && value.trim());
+  return reference?.trim() || `Réf. interne #${deposit.id}`;
 };
 
 const getWithdrawalRef = (withdrawal: Withdrawal) => {
-  const reference = withdrawal.sendavapayReference;
-  if (reference) return reference.startsWith("sdk") ? reference : `sdk${reference}`;
-  return makeRef("W", withdrawal.id, withdrawal.createdAt);
+  const reference = [
+    withdrawal.inpayOrderNumber,
+    withdrawal.omnipayId,
+    withdrawal.inpayOutTradeNo,
+    withdrawal.omnipayReference,
+  ].find((value) => typeof value === "string" && value.trim());
+  return reference?.trim() || `Réf. interne #${withdrawal.id}`;
 };
-
-const maskRef = (reference: string) =>
-  reference.length <= 6 ? reference : `${reference.slice(0, 2)}****${reference.slice(-4)}`;
 
 const formatDateTime = (dateString: string) => {
   const date = new Date(dateString);
-  const dd = String(date.getDate()).padStart(2, "0");
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const yyyy = date.getFullYear();
-  const hh = String(date.getHours()).padStart(2, "0");
-  const min = String(date.getMinutes()).padStart(2, "0");
-  const ss = String(date.getSeconds()).padStart(2, "0");
-  return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
+  if (Number.isNaN(date.getTime())) return "Date indisponible";
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 };
 
 const getStatusInfo = (status: string) => {
   switch (status) {
     case "completed":
     case "approved":
-      return { label: "Paiement réussi", color: CARD_GREEN };
+      return { label: "Versé avec succès", tone: "is-success" };
     case "rejected":
-      return { label: "Paiement échoué", color: "#e33d3d" };
+    case "failed":
+    case "canceled":
+    case "cancelled":
+      return { label: "Échec bancaire", tone: "is-failure" };
     case "processing":
-      return { label: "En traitement", color: "#d98208" };
+      return { label: "En cours", tone: "is-pending" };
     default:
-      return { label: "En attente...", color: "#d98208" };
+      return { label: "En attente", tone: "is-pending" };
   }
 };
 
-const getBalanceTypeLabel = (transaction: Transaction) => {
-  switch (transaction.type) {
-    case "bonus":
-      return transaction.description === "Bonus quotidien"
-        ? "Bonus quotidien"
-        : transaction.description;
-    case "signup_bonus":
-      return "Bonus d'inscription";
-    case "task_reward":
-      return "Récompense";
-    case "commission":
-      return "Commission";
-    case "deposit":
-      return "Dépôt";
-    default:
-      return transaction.description;
-  }
-};
+const EARNING_TYPES = new Set([
+  "free_claim",
+  "earning",
+  "task_reward",
+  "signup_bonus",
+  "bonus",
+  "commission",
+  "deposit_commission",
+  "gift_code",
+  "staking_release",
+]);
 
-const Row = ({ label, value }: { label: string; value: string }) => (
-  <div className="history-row">
-    <span>{label}</span>
-    <span>{value}</span>
-  </div>
-);
+function HistoryCard({
+  code,
+  createdAt,
+  amount,
+  status,
+  currency,
+  testId,
+}: {
+  code: string;
+  createdAt: string;
+  amount: string;
+  status: string;
+  currency: string;
+  testId?: string;
+}) {
+  const statusInfo = getStatusInfo(status);
 
-const Status = ({ label, color }: { label: string; color: string }) => (
-  <span className="history-status" style={{ backgroundColor: color }}>
-    {label}
-  </span>
-);
+  return (
+    <article className="history-card" data-testid={testId}>
+      <div className="history-row">
+        <span>Code :</span>
+        <strong className="history-code" title={code}>{code}</strong>
+      </div>
+      <div className="history-row">
+        <span>Temps d’application :</span>
+        <strong>{formatDateTime(createdAt)}</strong>
+      </div>
+      <div className="history-row">
+        <span>Montant :</span>
+        <strong>{amount} {currency}</strong>
+      </div>
+      <div className="history-row">
+        <span>Statut :</span>
+        <strong className={`history-status ${statusInfo.tone}`}>
+          <span className="history-status-dot" aria-hidden="true" />
+          {statusInfo.label}
+        </strong>
+      </div>
+    </article>
+  );
+}
 
 export default function HistoryPage() {
-  const { user, refreshUser } = useAuth();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<ActiveTab>("withdrawals");
-  const [verifyingId, setVerifyingId] = useState<number | null>(null);
-
-  const isAdmin = !!(user as any)?.isAdmin;
-  const countryInfo = user ? getCountryByCode(user.country) : null;
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<ActiveTab>("free");
+  const { data: apiCountries = [] } = useQuery<ApiCountry[]>({
+    queryKey: ["/api/countries"],
+  });
+  const countryInfo = user ? getCountryByCode(user.country, apiCountries) : null;
   const currency = countryInfo?.currency === "XOF" || countryInfo?.currency === "XAF"
     ? "FCFA"
     : countryInfo?.currency || "FCFA";
+  const formatAmount = (value: string | number) => {
+    const amount = Number(value || 0);
+    return (Number.isFinite(amount) ? Math.round(amount) : 0).toLocaleString("fr-FR");
+  };
 
-  const { data: deposits = [], isLoading: depositsLoading } = useQuery<Deposit[]>({
+  const {
+    data: deposits = [],
+    isLoading: depositsLoading,
+    isError: depositsError,
+  } = useQuery<Deposit[]>({
     queryKey: ["/api/deposits/history"],
     enabled: Boolean(user) && activeTab === "deposits",
   });
 
-  const { data: withdrawals = [], isLoading: withdrawalsLoading } = useQuery<Withdrawal[]>({
+  const {
+    data: withdrawals = [],
+    isLoading: withdrawalsLoading,
+    isError: withdrawalsError,
+  } = useQuery<Withdrawal[]>({
     queryKey: ["/api/withdrawals/history"],
     enabled: Boolean(user) && activeTab === "withdrawals",
   });
 
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery<Transaction[]>({
+  const {
+    data: transactions = [],
+    isLoading: transactionsLoading,
+    isError: transactionsError,
+  } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
-    enabled: Boolean(user) && activeTab === "balance",
+    enabled: Boolean(user) && activeTab === "free",
   });
-
-  const isPendingDeposit = (deposit: Deposit) =>
-    (deposit.status === "pending" || deposit.status === "processing") &&
-    Boolean(
-      deposit.soleaspayReference ||
-      deposit.soleaspayOrderId ||
-      deposit.omnipayId ||
-      deposit.omnipayReference ||
-      deposit.sendavapayReference,
-    );
-
-  const handleVerify = async (depositId: number) => {
-    setVerifyingId(depositId);
-    try {
-      const response = await fetch(`/api/deposits/${depositId}/verify`, { credentials: "include" });
-      const data = await response.json();
-      if (data.status === "approved") {
-        toast({ title: "Paiement confirmé", description: "Votre compte a été crédité" });
-        refreshUser();
-        queryClient.invalidateQueries({ queryKey: ["/api/deposits/history"] });
-      } else if (data.status === "rejected") {
-        toast({ title: "Paiement échoué", description: "Le paiement a été refusé", variant: "destructive" });
-        queryClient.invalidateQueries({ queryKey: ["/api/deposits/history"] });
-      } else {
-        toast({ title: "En cours", description: "Le paiement est toujours en attente" });
-      }
-    } catch {
-      toast({ title: "Erreur", description: "Impossible de vérifier le paiement", variant: "destructive" });
-    } finally {
-      setVerifyingId(null);
-    }
-  };
 
   if (!user) return null;
 
-  const balanceEntries: Transaction[] = [
-    ...transactions,
-    {
-      id: -1,
-      userId: user.id,
-      type: "registration",
-      amount: "0",
-      description: "Inscription",
-      createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : String(user.createdAt),
-    },
-  ].sort((first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime());
+  const freeEarnings = transactions
+    .filter((transaction) => EARNING_TYPES.has(transaction.type))
+    .sort((first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime());
+  const sortedDeposits = [...deposits].sort(
+    (first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime(),
+  );
+  const sortedWithdrawals = [...withdrawals].sort(
+    (first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime(),
+  );
 
   const isLoading =
-    activeTab === "balance"
+    activeTab === "free"
       ? transactionsLoading
       : activeTab === "deposits"
         ? depositsLoading
         : withdrawalsLoading;
+  const isError =
+    activeTab === "free"
+      ? transactionsError
+      : activeTab === "deposits"
+        ? depositsError
+        : withdrawalsError;
 
   return (
     <main className="history-page">
@@ -222,8 +228,8 @@ export default function HistoryPage() {
           width: 100%;
           min-height: 100dvh;
           overflow-x: hidden;
-          background: #fff;
-          color: #101010;
+          background: #f4f7f3;
+          color: #1b241c;
           font-family: Arial, sans-serif;
         }
         .history-page *,
@@ -236,14 +242,15 @@ export default function HistoryPage() {
           max-width: 500px;
           min-height: 100dvh;
           margin: 0 auto;
-          background: #fff;
+          background: #f4f7f3;
         }
         .history-header {
           position: relative;
           display: flex;
-          height: 66px;
+          height: 68px;
           align-items: center;
-          padding: 8px 20px 0;
+          padding: 8px 18px 0;
+          background: #fff;
         }
         .history-back {
           display: grid;
@@ -253,7 +260,8 @@ export default function HistoryPage() {
           border: 0;
           padding: 0;
           background: transparent;
-          color: #171717;
+          color: #263329;
+          cursor: pointer;
         }
         .history-back svg {
           width: 25px;
@@ -265,19 +273,23 @@ export default function HistoryPage() {
           right: 55px;
           left: 55px;
           margin: 0;
-          color: #111;
-          font-size: 20px;
+          color: #1d2a20;
+          font-size: 19px;
           font-weight: 700;
           line-height: 1;
           text-align: center;
         }
         .history-tabs {
           display: grid;
-          grid-template-columns: 1fr 1fr 1.12fr;
-          gap: 4px;
+          grid-template-columns: 1.25fr 1fr 1fr;
+          gap: 7px;
           align-items: center;
-          min-height: 61px;
-          padding: 4px 9px 13px;
+          min-height: 58px;
+          margin: 10px 14px 0;
+          padding: 5px;
+          border: 1px solid #e4eae2;
+          border-radius: 13px;
+          background: #fff;
         }
         .history-tab {
           display: flex;
@@ -285,113 +297,93 @@ export default function HistoryPage() {
           height: 42px;
           align-items: center;
           justify-content: center;
-          gap: 7px;
           border: 0;
-          border-radius: 6px;
-          padding: 0 7px;
+          border-radius: 9px;
+          padding: 0 6px;
           background: transparent;
-          color: #333;
-          font-size: 16px;
-          font-weight: 400;
+          color: #556156;
+          font-size: 14px;
+          font-weight: 600;
           line-height: 1;
           white-space: nowrap;
+          cursor: pointer;
+          transition: background-color .16s ease, color .16s ease;
         }
         .history-tab.active {
-          background: #242625;
+          background: #367c2b;
           color: #fff;
           font-weight: 700;
         }
-        .history-tab-arrow {
-          width: 0;
-          height: 0;
-          border-top: 6px solid transparent;
-          border-bottom: 6px solid transparent;
-          border-left: 7px solid #111;
-        }
-        .history-tab-arrow.right {
-          border-left-color: #e12626;
-        }
-        .history-tab-arrow.left {
-          transform: rotate(180deg);
+        .history-tab:focus-visible,
+        .history-back:focus-visible {
+          outline: 3px solid #a8d5a0;
+          outline-offset: 2px;
         }
         .history-content {
-          min-height: calc(100dvh - 127px);
-          padding: 9px 16px 40px;
-          background: #fff;
+          min-height: calc(100dvh - 136px);
+          padding: 14px 14px 40px;
         }
         .history-list {
           display: grid;
-          gap: 20px;
+          gap: 12px;
         }
         .history-card {
           width: 100%;
-          min-height: 146px;
           overflow: hidden;
-          border-radius: 7px;
-          padding: 10px 18px 11px;
-          background: ${CARD_BACKGROUND};
-          box-shadow: 0 1px 5px rgba(42, 44, 88, .045);
-        }
-        .history-card-top {
-          display: flex;
-          min-height: 29px;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 12px;
-        }
-        .history-amount {
-          margin: 0;
-          color: #111;
-          font-size: 18px;
-          font-weight: 700;
-          line-height: 1.15;
-        }
-        .history-card-label {
-          margin: 7px 0 0;
-          color: #111;
-          font-size: 16px;
-          line-height: 1.15;
-        }
-        .history-status {
-          display: inline-flex;
-          min-height: 31px;
-          align-items: center;
-          flex: 0 0 auto;
-          border-radius: 17px;
-          padding: 0 10px;
-          color: #fff;
-          font-size: 13px;
-          font-weight: 700;
-          line-height: 1;
-          white-space: nowrap;
-        }
-        .history-divider {
-          height: 1px;
-          margin: 13px 0 5px;
-          background: #8d8d8d;
+          border: 1px solid #e5ebe3;
+          border-radius: 12px;
+          padding: 12px 14px;
+          background: #fff;
+          box-shadow: 0 2px 9px rgba(34, 56, 36, .045);
         }
         .history-row {
           display: flex;
-          min-height: 21px;
+          min-height: 31px;
           align-items: center;
           justify-content: space-between;
-          gap: 12px;
-          color: #111;
-          font-size: 14px;
-          line-height: 1.2;
+          gap: 14px;
+          color: #687369;
+          font-size: 13px;
+          line-height: 1.35;
         }
-        .history-row > span:last-child {
+        .history-row strong {
+          min-width: 0;
+          color: #202a21;
+          font-size: 13px;
+          font-weight: 600;
           text-align: right;
+          overflow-wrap: anywhere;
+        }
+        .history-row .history-code {
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: .01em;
+        }
+        .history-row .history-status {
+          display: inline-flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 6px;
           white-space: nowrap;
+        }
+        .history-status.is-success { color: #287a38; }
+        .history-status.is-failure { color: #bc3434; }
+        .history-status.is-pending { color: #9a6b0a; }
+        .history-status-dot {
+          width: 8px;
+          height: 8px;
+          flex: 0 0 auto;
+          border-radius: 50%;
+          background: currentColor;
         }
         .history-empty {
           display: flex;
-          min-height: 280px;
+          min-height: 300px;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           gap: 10px;
-          color: #999;
+          color: #768078;
           font-size: 14px;
         }
         .history-empty img {
@@ -399,27 +391,21 @@ export default function HistoryPage() {
           height: 112px;
           object-fit: contain;
         }
-        .history-verify {
-          width: 100%;
-          margin-top: 10px;
-          border: 0;
-          border-radius: 18px;
-          padding: 9px 12px;
-          background: ${CARD_GREEN};
-          color: #fff;
-          font-size: 12px;
-          font-weight: 700;
+        .history-load-error {
+          padding: 32px 16px;
+          color: #9c3434;
+          text-align: center;
+          font-size: 14px;
         }
         @media (max-width: 370px) {
-          .history-header { height: 62px; padding-top: 6px; }
-          .history-title { font-size: 19px; }
-          .history-tabs { min-height: 58px; padding-bottom: 11px; }
-          .history-tab { font-size: 14px; }
-          .history-content { min-height: calc(100dvh - 120px); padding-right: 16px; padding-left: 16px; }
-          .history-card { padding-right: 18px; padding-left: 18px; }
-          .history-card-label { font-size: 15px; }
-          .history-status { font-size: 12px; padding-right: 8px; padding-left: 8px; }
-          .history-row { font-size: 13px; }
+          .history-title { font-size: 17px; }
+          .history-tabs { margin-right: 10px; margin-left: 10px; gap: 4px; }
+          .history-tab { font-size: 12px; }
+          .history-content { padding-right: 10px; padding-left: 10px; }
+          .history-card { padding-right: 11px; padding-left: 11px; }
+          .history-row { gap: 8px; font-size: 12px; }
+          .history-row strong { font-size: 12px; }
+          .history-row .history-code { font-size: 11px; }
         }
       `}</style>
 
@@ -430,33 +416,36 @@ export default function HistoryPage() {
               <ChevronLeft aria-hidden="true" />
             </button>
           </Link>
-          <h1 className="history-title">Enregistrements de fonds</h1>
+          <h1 className="history-title">Historique</h1>
         </header>
 
         <nav className="history-tabs" aria-label="Type d'enregistrement">
           <button
-            className={`history-tab ${activeTab === "balance" ? "active" : ""}`}
-            onClick={() => setActiveTab("balance")}
-            data-testid="tab-balance"
+            type="button"
+            className={`history-tab ${activeTab === "free" ? "active" : ""}`}
+            onClick={() => setActiveTab("free")}
+            aria-pressed={activeTab === "free"}
+            data-testid="tab-free-earnings"
           >
-            <span>Solde</span>
-            <span className={`history-tab-arrow ${activeTab === "balance" ? "right" : "left"}`} aria-hidden="true" />
+            Free Earnings
           </button>
           <button
+            type="button"
             className={`history-tab ${activeTab === "deposits" ? "active" : ""}`}
             onClick={() => setActiveTab("deposits")}
+            aria-pressed={activeTab === "deposits"}
             data-testid="tab-deposits"
           >
-            <span>Dépôt</span>
-            <span className={`history-tab-arrow ${activeTab === "deposits" ? "right" : "left"}`} aria-hidden="true" />
+            Dépôt
           </button>
           <button
+            type="button"
             className={`history-tab ${activeTab === "withdrawals" ? "active" : ""}`}
             onClick={() => setActiveTab("withdrawals")}
+            aria-pressed={activeTab === "withdrawals"}
             data-testid="tab-withdrawals"
           >
-            <span>Retrait</span>
-            <span className="history-tab-arrow right" aria-hidden="true" />
+            Retrait
           </button>
         </nav>
 
@@ -465,100 +454,66 @@ export default function HistoryPage() {
             <div className="history-empty">
               <Loader2 className="animate-spin" />
             </div>
-          ) : activeTab === "balance" ? (
-            balanceEntries.length > 0 ? (
+          ) : isError ? (
+            <p className="history-load-error">Impossible de charger cet historique. Réessayez plus tard.</p>
+          ) : activeTab === "free" ? (
+            freeEarnings.length > 0 ? (
               <div className="history-list">
-                {balanceEntries.map((transaction) => {
-                  const amount = Number.parseFloat(transaction.amount || "0");
-                  const isRegistration = transaction.type === "registration";
-                  return (
-                    <article className="history-card" key={`${transaction.type}-${transaction.id}`} data-testid={`balance-item-${transaction.id}`}>
-                      <div className="history-card-top">
-                        <div>
-                          <p className="history-amount">
-                            {isRegistration ? "—" : `+${currency} ${amount.toLocaleString("fr-FR")}`}
-                          </p>
-                           <p className="history-card-label">{transaction.type === "deposit" ? "Dépôt" : transaction.description}</p>
-                        </div>
-                        <Status label="Paiement réussi" color={CARD_GREEN} />
-                      </div>
-                      <div className="history-divider" />
-                      <Row label="Type :" value={isRegistration ? "Inscription" : getBalanceTypeLabel(transaction)} />
-                      <Row label="Heure :" value={formatDateTime(transaction.createdAt)} />
-                    </article>
-                  );
-                })}
+                {freeEarnings.map((transaction) => (
+                  <HistoryCard
+                    key={transaction.id}
+                    testId={`free-earning-item-${transaction.id}`}
+                    code={`#${transaction.id}`}
+                    createdAt={transaction.createdAt}
+                    amount={`+${formatAmount(transaction.amount)}`}
+                    status="approved"
+                    currency={currency}
+                  />
+                ))}
               </div>
             ) : (
-               <EmptyState className="history-empty">
+              <EmptyState className="history-empty">
                 <span>Plus de données</span>
-               </EmptyState>
+              </EmptyState>
             )
           ) : activeTab === "deposits" ? (
-            deposits.length > 0 ? (
+            sortedDeposits.length > 0 ? (
               <div className="history-list">
-                {deposits.map((deposit) => {
-                  const { label, color } = getStatusInfo(deposit.status);
-                  const amount = Number.parseFloat(deposit.amount);
-                  const reference = isAdmin ? getDepositRef(deposit) : maskRef(getDepositRef(deposit));
-                  return (
-                    <article className="history-card" key={deposit.id} data-testid={`deposit-item-${deposit.id}`}>
-                      <div className="history-card-top">
-                        <div>
-                          <p className="history-amount">{currency} {amount.toLocaleString("fr-FR")}</p>
-                          <p className="history-card-label">Montant du dépôt</p>
-                        </div>
-                        <Status label={label} color={color} />
-                      </div>
-                      <div className="history-divider" />
-                      <Row label="Numéro :" value={reference} />
-                      <Row label="Heure du dépôt :" value={formatDateTime(deposit.createdAt)} />
-                      {isPendingDeposit(deposit) && !deposit.sendavapayReference ? (
-                        <button
-                          className="history-verify"
-                          onClick={() => handleVerify(deposit.id)}
-                          disabled={verifyingId === deposit.id}
-                          data-testid={`button-verify-${deposit.id}`}
-                        >
-                          {verifyingId === deposit.id ? <Loader2 className="inline animate-spin" /> : <RefreshCw className="mr-1 inline h-3 w-3" />}
-                          Vérifier la transaction
-                        </button>
-                      ) : null}
-                    </article>
-                  );
-                })}
+                {sortedDeposits.map((deposit) => (
+                  <HistoryCard
+                    key={deposit.id}
+                    testId={`deposit-item-${deposit.id}`}
+                    code={getDepositRef(deposit)}
+                    createdAt={deposit.createdAt}
+                    amount={formatAmount(deposit.amount)}
+                    status={deposit.status}
+                    currency={currency}
+                  />
+                ))}
               </div>
             ) : (
-               <EmptyState className="history-empty">
+              <EmptyState className="history-empty">
                 <span>Plus de données</span>
-               </EmptyState>
+              </EmptyState>
             )
-          ) : withdrawals.length > 0 ? (
+          ) : sortedWithdrawals.length > 0 ? (
             <div className="history-list">
-              {withdrawals.map((withdrawal) => {
-                const { label, color } = getStatusInfo(withdrawal.status);
-                const gross = Number.parseFloat(withdrawal.amount);
-                const net = Number.parseFloat(withdrawal.netAmount || withdrawal.amount);
-                return (
-                  <article className="history-card" key={withdrawal.id} data-testid={`withdrawal-item-${withdrawal.id}`}>
-                    <div className="history-card-top">
-                      <div>
-                        <p className="history-amount">{currency} {gross.toLocaleString("fr-FR")}</p>
-                        <p className="history-card-label">Montant du retrait</p>
-                      </div>
-                      <Status label={label} color={color} />
-                    </div>
-                    <div className="history-divider" />
-                    <Row label="Montant reçu :" value={`${currency} ${net.toLocaleString("fr-FR")}`} />
-                    <Row label="Heure du retrait :" value={formatDateTime(withdrawal.createdAt)} />
-                  </article>
-                );
-              })}
+              {sortedWithdrawals.map((withdrawal) => (
+                <HistoryCard
+                  key={withdrawal.id}
+                  testId={`withdrawal-item-${withdrawal.id}`}
+                  code={getWithdrawalRef(withdrawal)}
+                  createdAt={withdrawal.createdAt}
+                  amount={formatAmount(withdrawal.amount)}
+                  status={withdrawal.status}
+                  currency={currency}
+                />
+              ))}
             </div>
           ) : (
-             <EmptyState className="history-empty">
+            <EmptyState className="history-empty">
               <span>Plus de données</span>
-             </EmptyState>
+            </EmptyState>
           )}
         </section>
       </div>
