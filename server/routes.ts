@@ -1729,21 +1729,24 @@ export async function registerRoutes(
       if (!reference) {
         throw new Error("DrimPay n'a pas retourné de référence de transaction.");
       }
-      const paymentUrl = getDrimPayWavePaymentUrl(country, operator.id, initiated.payment_url);
-      if (operator.id === "wave" && !paymentUrl) {
-        throw new Error("Lien de paiement Wave indisponible.");
-      }
       await storage.updateDeposit(deposit.id, { drimpayReference: reference });
       const updated = await reconcileDrimPayDeposit(
         { ...deposit, drimpayOrderId: orderId, drimpayReference: reference },
         initiated,
       );
+      const paymentUrl = getDrimPayWavePaymentUrl(country, operator.id, initiated.payment_url);
+      const paymentLinkUnavailable = operator.id === "wave" && !paymentUrl;
       return res.status(202).json({
         depositId: deposit.id,
         reference,
         status: updated.status,
         paymentUrl: paymentUrl || null,
-        message: typeof initiated.message === "string" ? initiated.message : "",
+        paymentLinkUnavailable,
+        message: typeof initiated.message === "string"
+          ? initiated.message
+          : paymentLinkUnavailable
+            ? "Le lien de paiement est indisponible. Votre dépôt reste en cours de vérification."
+            : "",
       });
     } catch (error: any) {
       if (depositId && error instanceof DrimPayApiError && error.status >= 400 && error.status < 500) {
