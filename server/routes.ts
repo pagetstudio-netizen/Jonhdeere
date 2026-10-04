@@ -2971,7 +2971,7 @@ export async function registerRoutes(
       if (!deposit || !deposit.drimpayOrderId) {
         return res.status(404).json({ message: "Dépôt DrimPay introuvable" });
       }
-      if (deposit.status === "approved" || deposit.status === "rejected") {
+      if (deposit.status === "approved") {
         return res.json({ status: deposit.status });
       }
       if (!deposit.drimpayReference || !isDrimPayConfigured()) {
