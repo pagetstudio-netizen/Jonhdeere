@@ -8,9 +8,12 @@ import EmptyState from "@/components/empty-state";
 
 interface Deposit {
   id: number;
-  amount: string;
+  amount: string | number;
   status: string;
   createdAt: string;
+  accountNumber?: string | null;
+  paymentMethod?: string | null;
+  channelName?: string | null;
   reference?: string | null;
   soleaspayReference?: string;
   soleaspayOrderId?: string;
@@ -26,9 +29,13 @@ interface Deposit {
 
 interface Withdrawal {
   id: number;
-  amount: string;
+  amount: string | number;
+  netAmount?: string | number;
+  fees?: string | number | null;
   status: string;
   createdAt: string;
+  accountNumber?: string | null;
+  paymentMethod?: string | null;
   inpayOrderNumber?: string;
   inpayOutTradeNo?: string;
   omnipayId?: string;
@@ -38,8 +45,9 @@ interface Withdrawal {
 interface Transaction {
   id: number;
   type: string;
-  amount: string;
+  amount: string | number;
   createdAt: string;
+  description?: string;
 }
 
 type ActiveTab = "free" | "deposits" | "withdrawals";
@@ -74,30 +82,42 @@ const getWithdrawalRef = (withdrawal: Withdrawal) => {
 const formatDateTime = (dateString: string) => {
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return "Date indisponible";
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 };
 
-const getStatusInfo = (status: string) => {
+const getStatusInfo = (status: string, kind: "earning" | "deposit" | "withdrawal") => {
   switch (status) {
     case "completed":
     case "approved":
-      return { label: "Versé avec succès", tone: "is-success" };
+      return {
+        label: kind === "withdrawal" ? "Transfert terminé" : kind === "deposit" ? "Dépôt terminé" : "Crédité",
+        tone: "is-success",
+      };
     case "rejected":
     case "failed":
     case "canceled":
     case "cancelled":
-      return { label: "Échec bancaire", tone: "is-failure" };
+      return {
+        label: kind === "withdrawal" ? "Transfert échoué" : kind === "deposit" ? "Dépôt échoué" : "Échec",
+        tone: "is-failure",
+      };
     case "processing":
       return { label: "En cours", tone: "is-pending" };
     default:
       return { label: "En attente", tone: "is-pending" };
   }
+};
+
+const maskAccountNumber = (value?: string | null) => {
+  const trimmed = value?.trim();
+  const digits = trimmed?.replace(/\D/g, "") ?? "";
+  if (!digits) return "";
+
+  const prefix = digits.length > 3 ? digits.slice(0, 1) : "";
+  const suffix = digits.slice(-2);
+  const hiddenDigits = Math.max(1, digits.length - prefix.length - suffix.length);
+  return `${trimmed?.startsWith("+") ? "+" : ""}${prefix}${"*".repeat(hiddenDigits)}${suffix}`;
 };
 
 const EARNING_TYPES = new Set([
@@ -118,6 +138,11 @@ function HistoryCard({
   amount,
   status,
   currency,
+  kind,
+  paymentMethod,
+  accountNumber,
+  referenceLabel,
+  fees,
   testId,
 }: {
   code: string;
@@ -125,31 +150,37 @@ function HistoryCard({
   amount: string;
   status: string;
   currency: string;
+  kind: "earning" | "deposit" | "withdrawal";
+  paymentMethod: string;
+  accountNumber?: string | null;
+  referenceLabel: string;
+  fees?: string | number | null;
   testId?: string;
 }) {
-  const statusInfo = getStatusInfo(status);
+  const statusInfo = getStatusInfo(status, kind);
+  const maskedAccountNumber = maskAccountNumber(accountNumber);
+  const paymentLabel = `${paymentMethod}${maskedAccountNumber ? ` (${maskedAccountNumber})` : ""}`;
 
   return (
     <article className="history-card" data-testid={testId}>
-      <div className="history-row">
-        <span>Code :</span>
-        <strong className="history-code" title={code}>{code}</strong>
+      <div className="history-row history-row-meta">
+        <span>{formatDateTime(createdAt)}</span>
+        <strong className={`history-status ${statusInfo.tone}`}>{statusInfo.label}</strong>
       </div>
-      <div className="history-row">
-        <span>Temps d’application :</span>
-        <strong>{formatDateTime(createdAt)}</strong>
+      <div className="history-row history-row-main">
+        <span>{paymentLabel}</span>
+        <strong className="history-amount">{amount} {currency}</strong>
       </div>
-      <div className="history-row">
-        <span>Montant :</span>
-        <strong>{amount} {currency}</strong>
+      <div className="history-row history-row-reference">
+        <span>{referenceLabel}</span>
+        <strong className="history-value" title={code}>{code}</strong>
       </div>
-      <div className="history-row">
-        <span>Statut :</span>
-        <strong className={`history-status ${statusInfo.tone}`}>
-          <span className="history-status-dot" aria-hidden="true" />
-          {statusInfo.label}
-        </strong>
-      </div>
+      {fees != null && (
+        <div className="history-row history-row-fees">
+          <span>Frais</span>
+          <strong className="history-value">{fees} {currency}</strong>
+        </div>
+      )}
     </article>
   );
 }
@@ -332,50 +363,81 @@ export default function HistoryPage() {
           overflow: hidden;
           border: 1px solid #e5ebe3;
           border-radius: 12px;
-          padding: 12px 14px;
+          display: flex;
+          min-height: 198px;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 15px 16px;
           background: #fff;
-          box-shadow: 0 2px 9px rgba(34, 56, 36, .045);
+          box-shadow: 0 2px 9px rgba(34, 56, 36, .055);
         }
         .history-row {
           display: flex;
-          min-height: 31px;
+          min-height: 21px;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
-          color: #687369;
+          gap: 12px;
+          color: #747a74;
           font-size: 13px;
           line-height: 1.35;
         }
+        .history-row > span {
+          min-width: 0;
+          flex: 1;
+        }
         .history-row strong {
           min-width: 0;
+          max-width: 65%;
           color: #202a21;
           font-size: 13px;
           font-weight: 600;
           text-align: right;
           overflow-wrap: anywhere;
         }
-        .history-row .history-code {
+        .history-row-meta {
+          color: #858585;
           font-size: 12px;
+        }
+        .history-row-meta strong {
+          color: #858585;
+          font-size: 12px;
+          font-weight: 500;
+          white-space: nowrap;
+        }
+        .history-row-main {
+          color: #252a25;
+          font-size: 14px;
+        }
+        .history-row-main > span {
+          color: #252a25;
+          font-weight: 500;
+          overflow-wrap: anywhere;
+        }
+        .history-row .history-amount {
+          color: #5c9a71;
+          font-size: 15px;
           font-weight: 700;
-          letter-spacing: .01em;
+          white-space: nowrap;
+        }
+        .history-row-reference,
+        .history-row-fees {
+          color: #777d77;
+          font-size: 13px;
+        }
+        .history-row .history-value {
+          color: #5c9a71;
+          font-size: 13px;
+          font-weight: 700;
         }
         .history-row .history-status {
           display: inline-flex;
           align-items: center;
           justify-content: flex-end;
-          gap: 6px;
           white-space: nowrap;
         }
-        .history-status.is-success { color: #287a38; }
+        .history-status.is-success { color: #777; }
         .history-status.is-failure { color: #bc3434; }
         .history-status.is-pending { color: #9a6b0a; }
-        .history-status-dot {
-          width: 8px;
-          height: 8px;
-          flex: 0 0 auto;
-          border-radius: 50%;
-          background: currentColor;
-        }
         .history-empty {
           display: flex;
           min-height: 300px;
@@ -402,10 +464,13 @@ export default function HistoryPage() {
           .history-tabs { margin-right: 10px; margin-left: 10px; gap: 4px; }
           .history-tab { font-size: 12px; }
           .history-content { padding-right: 10px; padding-left: 10px; }
-          .history-card { padding-right: 11px; padding-left: 11px; }
+          .history-card { min-height: 190px; padding-right: 11px; padding-left: 11px; }
           .history-row { gap: 8px; font-size: 12px; }
-          .history-row strong { font-size: 12px; }
-          .history-row .history-code { font-size: 11px; }
+          .history-row strong { font-size: 11px; }
+          .history-row-meta,
+          .history-row-meta strong { font-size: 10px; }
+          .history-row .history-amount { font-size: 13px; }
+          .history-row .history-value { font-size: 11px; }
         }
       `}</style>
 
@@ -468,6 +533,9 @@ export default function HistoryPage() {
                     amount={`+${formatAmount(transaction.amount)}`}
                     status="approved"
                     currency={currency}
+                    kind="earning"
+                    paymentMethod={transaction.description || "Free Earnings"}
+                    referenceLabel="Référence"
                   />
                 ))}
               </div>
@@ -488,6 +556,10 @@ export default function HistoryPage() {
                     amount={formatAmount(deposit.amount)}
                     status={deposit.status}
                     currency={currency}
+                    kind="deposit"
+                    paymentMethod={deposit.paymentMethod || deposit.channelName || "Dépôt"}
+                    accountNumber={deposit.accountNumber}
+                    referenceLabel="Numéro de commande"
                   />
                 ))}
               </div>
@@ -504,9 +576,14 @@ export default function HistoryPage() {
                   testId={`withdrawal-item-${withdrawal.id}`}
                   code={getWithdrawalRef(withdrawal)}
                   createdAt={withdrawal.createdAt}
-                  amount={formatAmount(withdrawal.amount)}
+                    amount={formatAmount(withdrawal.netAmount ?? withdrawal.amount)}
                   status={withdrawal.status}
                   currency={currency}
+                    kind="withdrawal"
+                    paymentMethod={withdrawal.paymentMethod || "Retrait"}
+                    accountNumber={withdrawal.accountNumber}
+                    referenceLabel="Numéro de commande"
+                    fees={withdrawal.fees == null ? undefined : formatAmount(withdrawal.fees)}
                 />
               ))}
             </div>

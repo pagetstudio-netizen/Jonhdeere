@@ -9,5 +9,7 @@ export const modules: ModuleMap = {
   "./components/mockups/revenue-page/Current.tsx": () => import("../components/mockups/revenue-page/Current.tsx"),
   "./components/mockups/revenue-page/ReferenceMatch.tsx": () => import("../components/mockups/revenue-page/ReferenceMatch.tsx"),
   "./components/mockups/service-client-page/Current.tsx": () => import("../components/mockups/service-client-page/Current.tsx"),
-  "./components/mockups/service-client-page/FrenchMatch.tsx": () => import("../components/mockups/service-client-page/FrenchMatch.tsx")
+  "./components/mockups/service-client-page/FrenchMatch.tsx": () => import("../components/mockups/service-client-page/FrenchMatch.tsx"),
+  "./components/mockups/transaction-history-cards/Current.tsx": () => import("../components/mockups/transaction-history-cards/Current.tsx"),
+  "./components/mockups/transaction-history-cards/ReferenceMatch.tsx": () => import("../components/mockups/transaction-history-cards/ReferenceMatch.tsx")
 };
