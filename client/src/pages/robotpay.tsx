@@ -54,6 +54,7 @@ export default function RobotPayPage() {
   const [ussd, setUssd] = useState("");
   const [message, setMessage] = useState("");
   const [redirectUrl, setRedirectUrl] = useState("");
+  const [paymentLinkUnavailable, setPaymentLinkUnavailable] = useState(false);
   const [status, setStatus] = useState("pending");
   const [screenshot, setScreenshot] = useState("");
   const [screenshotName, setScreenshotName] = useState("");
@@ -251,6 +252,7 @@ export default function RobotPayPage() {
     onSuccess: (data) => {
       setDepositId(data.depositId);
       setRedirectUrl(typeof data.paymentUrl === "string" ? data.paymentUrl : "");
+      setPaymentLinkUnavailable(Boolean(data.paymentLinkUnavailable));
       setMessage(data.message || "");
       setStatus(data.status || "processing");
       setStep(data.status === "approved" ? 3 : 2);
@@ -315,9 +317,12 @@ export default function RobotPayPage() {
     if (!phone.trim()) { toast({ title: "Numéro requis", description: "Saisissez le numéro Mobile Money utilisé.", variant: "destructive" }); return; }
     if (!operator) { toast({ title: "Opérateur requis", description: "Sélectionnez votre opérateur.", variant: "destructive" }); return; }
     if (operator.manualNumber) manualMutation.mutate();
-    else if (activeProvider === "ashtech") ashtechMutation.mutate(undefined);
-    else if (activeProvider === "drimpay") drimpayMutation.mutate();
-    else sendavaMutation.mutate();
+    else {
+      setPaymentLinkUnavailable(false);
+      if (activeProvider === "ashtech") ashtechMutation.mutate(undefined);
+      else if (activeProvider === "drimpay") drimpayMutation.mutate();
+      else sendavaMutation.mutate();
+    }
   };
   const submitOtp = async () => {
     if (activeProvider === "ashtech") {
@@ -449,7 +454,7 @@ export default function RobotPayPage() {
           )}
           {step === 2 && (
             <div className="space-y-5 text-center">
-              {redirectUrl ? <><p className="text-gray-700">{message || "Ouvrez la page sécurisée pour terminer votre paiement."}</p><a href={redirectUrl} target="_blank" rel="noreferrer" className="block rounded-lg bg-[#1486d8] text-white py-3 font-semibold">Ouvrir la page de paiement</a></> : (otpToken || ashtechOtpRequired) ? <>{ussd && <p className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-3 text-center font-mono text-xl font-bold tracking-widest text-[#00a526]">{ussd}</p>}<p className="text-sm text-gray-600">{ussd ? "Composez ce code sur votre téléphone pour obtenir le code OTP, puis saisissez-le ci-dessous." : "Un code OTP vous a été envoyé. Saisissez-le ci-dessous."}</p><input value={activeProvider === "ashtech" ? ashtechOtp : otp} onChange={e => activeProvider === "ashtech" ? setAshtechOtp(e.target.value.replace(/\D/g, "")) : setOtp(e.target.value)} inputMode="numeric" placeholder="Saisissez le code OTP" className="w-full border rounded-lg p-3 text-center text-xl" /><button onClick={submitOtp} disabled={busy} className="w-full rounded-lg bg-[#1486d8] py-3 font-semibold text-white disabled:opacity-50">Confirmer</button></> : <><ShieldCheck className="mx-auto h-16 w-16 animate-pulse text-green-400" /><p className="font-semibold text-lg">Paiement en cours de confirmation</p><p className="text-sm text-gray-500">Validez la demande sur votre téléphone. La page se met à jour automatiquement.</p></>}
+              {redirectUrl ? <><p className="text-gray-700">{message || "Ouvrez la page sécurisée pour terminer votre paiement."}</p><a href={redirectUrl} target="_blank" rel="noreferrer" className="block rounded-lg bg-[#1486d8] text-white py-3 font-semibold">Ouvrir la page de paiement</a></> : (otpToken || ashtechOtpRequired) ? <>{ussd && <p className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-3 text-center font-mono text-xl font-bold tracking-widest text-[#00a526]">{ussd}</p>}<p className="text-sm text-gray-600">{ussd ? "Composez ce code sur votre téléphone pour obtenir le code OTP, puis saisissez-le ci-dessous." : "Un code OTP vous a été envoyé. Saisissez-le ci-dessous."}</p><input value={activeProvider === "ashtech" ? ashtechOtp : otp} onChange={e => activeProvider === "ashtech" ? setAshtechOtp(e.target.value.replace(/\D/g, "")) : setOtp(e.target.value)} inputMode="numeric" placeholder="Saisissez le code OTP" className="w-full border rounded-lg p-3 text-center text-xl" /><button onClick={submitOtp} disabled={busy} className="w-full rounded-lg bg-[#1486d8] py-3 font-semibold text-white disabled:opacity-50">Confirmer</button></> : <><ShieldCheck className="mx-auto h-16 w-16 animate-pulse text-green-400" /><p className="font-semibold text-lg">Paiement en cours de confirmation</p><p className="text-sm text-gray-500">{paymentLinkUnavailable ? message : "Validez la demande sur votre téléphone. La page se met à jour automatiquement."}</p></>}
             </div>
           )}
           {step === 3 && (manualSubmitted ? <div className="space-y-5 py-5 text-center"><Check className="mx-auto h-24 w-24 rounded-full bg-green-500 p-4 text-white" /><h2 className="text-xl text-gray-700">Demande envoyée</h2><p className="text-sm text-gray-500">Votre capture et les informations du paiement ont été transmises. Le dépôt sera crédité après vérification.</p><div className="rounded bg-gray-100 p-3 text-left text-sm leading-7 text-gray-700"><b>Opérateur :</b> {operator?.name}<br /><b>Montant :</b> {amount.toLocaleString()} {currency}<br /><b>Statut :</b> En attente de validation</div><button onClick={() => navigate("/")} className="text-lg text-[#4b91ef]">Retourner sur le site</button></div> : <div className="space-y-5 py-5 text-center"><div className="text-left border-b pb-3 text-xl text-gray-700">ROBOTPAY - {countryInfo?.name || country}</div><p className="text-left text-2xl text-gray-900">{amount.toLocaleString()} {currency}</p><Check className="w-24 h-24 mx-auto rounded-full bg-green-500 p-4 text-white" /><h2 className="text-xl text-gray-600">Votre paiement a été approuvé</h2><div className="rounded bg-gray-200 p-3 text-left text-sm leading-7 text-gray-700"><b>Payeur :</b> {phone}<br /><b>ID Transaction :</b> {transactionReference}<br /><b>Date Paiement :</b> {new Date().toLocaleString("fr-FR")}</div><p className="pt-12 text-gray-500">🔒 Sécurisé par <b className="text-[#174d79]">ROBOTPAY</b></p><button onClick={() => navigate("/")} className="text-lg text-[#4b91ef]">Retourner sur le site</button></div>)}

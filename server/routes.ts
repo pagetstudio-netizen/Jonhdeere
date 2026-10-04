@@ -1742,11 +1742,9 @@ export async function registerRoutes(
         status: updated.status,
         paymentUrl: paymentUrl || null,
         paymentLinkUnavailable,
-        message: typeof initiated.message === "string"
-          ? initiated.message
-          : paymentLinkUnavailable
-            ? "Le lien de paiement est indisponible. Votre dépôt reste en cours de vérification."
-            : "",
+        message: paymentLinkUnavailable
+          ? "Le lien de paiement est indisponible. Votre dépôt reste en cours de vérification."
+          : "",
       });
     } catch (error: any) {
       if (depositId && error instanceof DrimPayApiError && error.status >= 400 && error.status < 500) {
