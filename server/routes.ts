@@ -72,6 +72,7 @@ import {
   createDrimPayReference,
   drimPayGetBalance,
   drimPayGetPayin,
+  DRIMPAY_MAX_PAYIN_STATUS_CHECKS,
   drimPayGetPayout,
   drimPayInitiatePayin,
   drimPayInitiatePayout,
@@ -350,7 +351,59 @@ async function reconcileDrimPayDeposit(
   } else if (deposit.status === "pending") {
     await storage.updateDeposit(deposit.id, { status: "processing" });
   }
+  if (status === "approved" || status === "rejected") {
+    await storage.clearDrimPayStatusCheckCount(deposit.id).catch(() => undefined);
+  }
   return (await storage.getDeposit(deposit.id)) || deposit;
+}
+
+let drimPayStatusReconciliationRunning = false;
+
+export async function reconcilePendingDrimPayDeposits() {
+  if (drimPayStatusReconciliationRunning || !isDrimPayConfigured()) return;
+  drimPayStatusReconciliationRunning = true;
+  try {
+    const pendingDeposits = await storage.getPendingDrimPayDeposits();
+    for (const deposit of pendingDeposits) {
+      if (!deposit.drimpayReference) continue;
+
+      let attempt: number;
+      try {
+        attempt = await storage.incrementDrimPayStatusCheckCount(deposit.id);
+      } catch (error: any) {
+        console.error(`[drimpay] failed to record status check for deposit #${deposit.id}:`, error?.message || error);
+        continue;
+      }
+
+      if (attempt > DRIMPAY_MAX_PAYIN_STATUS_CHECKS) {
+        await storage.claimDepositRejection(deposit.id);
+        await storage.clearDrimPayStatusCheckCount(deposit.id).catch(() => undefined);
+        continue;
+      }
+
+      try {
+        const providerStatus = await drimPayGetPayin(deposit.drimpayReference);
+        const updated = await reconcileDrimPayDeposit(deposit, providerStatus);
+        if (updated.status === "approved" || updated.status === "rejected") continue;
+        if (attempt === DRIMPAY_MAX_PAYIN_STATUS_CHECKS) {
+          await storage.claimDepositRejection(deposit.id);
+          await storage.clearDrimPayStatusCheckCount(deposit.id).catch(() => undefined);
+          console.info(`[drimpay] deposit #${deposit.id} marked failed after five status checks`);
+        }
+      } catch (error: any) {
+        console.error(`[drimpay] automatic status check ${attempt}/${DRIMPAY_MAX_PAYIN_STATUS_CHECKS} failed for deposit #${deposit.id}:`, error?.message || error);
+        if (attempt === DRIMPAY_MAX_PAYIN_STATUS_CHECKS) {
+          await storage.claimDepositRejection(deposit.id);
+          await storage.clearDrimPayStatusCheckCount(deposit.id).catch(() => undefined);
+          console.info(`[drimpay] deposit #${deposit.id} marked failed after five status checks`);
+        }
+      }
+    }
+  } catch (error: any) {
+    console.error("[drimpay] automatic deposit reconciliation failed:", error?.message || error);
+  } finally {
+    drimPayStatusReconciliationRunning = false;
+  }
 }
 
 async function reconcileDrimPayPayout(
@@ -1568,7 +1621,7 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Acces refuse" });
       }
 
-      if (deposit.status === "approved" || deposit.status === "rejected") {
+      if (deposit.status === "approved") {
         return res.json({ status: deposit.status });
       }
 
@@ -1743,7 +1796,7 @@ export async function registerRoutes(
         paymentUrl: paymentUrl || null,
         paymentLinkUnavailable,
         message: paymentLinkUnavailable
-          ? "Le lien de paiement est indisponible. Votre dépôt reste en cours de vérification."
+          ? "Votre paiement est en cours de traitement. Veuillez patienter."
           : "",
       });
     } catch (error: any) {
@@ -1763,15 +1816,13 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Dépôt DrimPay introuvable" });
       }
       if (deposit.userId !== req.session.userId) return res.status(403).json({ message: "Accès refusé" });
-      if (deposit.status === "approved" || deposit.status === "rejected") {
+      if (deposit.status === "approved") {
         return res.json({ status: deposit.status });
       }
       if (!deposit.drimpayReference) return res.json({ status: deposit.status });
       if (!isDrimPayConfigured()) return res.status(503).json({ message: "DrimPay n'est pas configuré sur le serveur" });
 
-      const providerStatus = await drimPayGetPayin(deposit.drimpayReference);
-      const updated = await reconcileDrimPayDeposit(deposit, providerStatus);
-      return res.json({ status: updated.status });
+      return res.json({ status: deposit.status });
     } catch (error: any) {
       console.error("[drimpay] payin status error:", error?.message || error);
       return res.status(502).json({ message: error.message || "Impossible de vérifier le dépôt DrimPay" });
@@ -2933,8 +2984,9 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Référence ou configuration DrimPay manquante" });
       }
       const providerStatus = await drimPayGetPayin(deposit.drimpayReference);
+      const normalizedProviderStatus = mapDrimPayStatus(unwrapDrimPayResponse(providerStatus).status);
       const updated = await reconcileDrimPayDeposit(deposit, providerStatus);
-      return res.json({ status: updated.status });
+      return res.json({ status: updated.status, providerStatus: normalizedProviderStatus });
     } catch (error: any) {
       console.error("[drimpay] admin payin status error:", error?.message || error);
       return res.status(502).json({ message: error.message || "Impossible de vérifier le dépôt DrimPay" });
@@ -2977,6 +3029,9 @@ export async function registerRoutes(
     try {
       const deposit = await storage.claimAdminDepositApproval(parseInt(getRouteParam(req.params.id)), req.session.userId!);
       if (!deposit) return res.status(409).json({ message: "Ce dépôt est déjà approuvé" });
+      if (deposit.drimpayOrderId) {
+        await storage.clearDrimPayStatusCheckCount(deposit.id).catch(() => undefined);
+      }
 
       const user = await storage.getUser(deposit.userId);
       if (user) {
@@ -3011,6 +3066,9 @@ export async function registerRoutes(
         processedBy: req.session.userId,
         screenshot: null,
       });
+      if (deposit.drimpayOrderId) {
+        await storage.clearDrimPayStatusCheckCount(deposit.id).catch(() => undefined);
+      }
 
       if (ban) {
         await storage.updateUser(deposit.userId, { isBanned: true });

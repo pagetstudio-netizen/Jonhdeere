@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import test from "node:test";
 import {
   drimPayOperatorsForCountry,
+  DRIMPAY_MAX_PAYIN_STATUS_CHECKS,
   getDrimPayWavePaymentUrl,
   getDrimPayOperatorSlug,
   isDrimPayCountry,
@@ -59,6 +60,10 @@ test("DrimPay maps terminal statuses and treats other states as pending", () => 
   assert.equal(mapDrimPayStatus("failed"), "rejected");
   assert.equal(mapDrimPayStatus("expired"), "rejected");
   assert.equal(mapDrimPayStatus("processing"), "pending");
+});
+
+test("DrimPay automatic pay-in status checks are limited to five attempts", () => {
+  assert.equal(DRIMPAY_MAX_PAYIN_STATUS_CHECKS, 5);
 });
 
 test("DrimPay webhook signature requires the exact fresh raw body and timestamp", () => {

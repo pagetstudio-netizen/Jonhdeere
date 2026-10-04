@@ -10,6 +10,8 @@ import { db } from "./db";
 import { eq, and, desc, sql, gte, lte, or, isNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
+const DRIMPAY_STATUS_CHECK_SETTING_PREFIX = "__internal_drimpay_status_checks:";
+
 export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
@@ -46,6 +48,9 @@ export interface IStorage {
   getDepositByAshtechReference(reference: string): Promise<Deposit | undefined>;
   getDepositByAshtechTransactionId(transactionId: string): Promise<Deposit | undefined>;
   getPendingAshtechDeposits(): Promise<Deposit[]>;
+  getPendingDrimPayDeposits(): Promise<Deposit[]>;
+  incrementDrimPayStatusCheckCount(depositId: number): Promise<number>;
+  clearDrimPayStatusCheckCount(depositId: number): Promise<void>;
   claimDepositApproval(id: number): Promise<Deposit | undefined>;
   claimDepositRejection(id: number): Promise<Deposit | undefined>;
   claimAdminDepositApproval(id: number, processedBy: number): Promise<Deposit | undefined>;
@@ -573,6 +578,35 @@ export class DatabaseStorage implements IStorage {
       sql`${deposits.ashtechTransactionId} IS NOT NULL`,
       or(eq(deposits.status, "pending"), eq(deposits.status, "processing")),
     ));
+  }
+
+  async getPendingDrimPayDeposits(): Promise<Deposit[]> {
+    return db.select().from(deposits).where(and(
+      sql`${deposits.drimpayOrderId} IS NOT NULL`,
+      sql`${deposits.drimpayReference} IS NOT NULL`,
+      or(eq(deposits.status, "pending"), eq(deposits.status, "processing")),
+    ));
+  }
+
+  async incrementDrimPayStatusCheckCount(depositId: number): Promise<number> {
+    const key = `${DRIMPAY_STATUS_CHECK_SETTING_PREFIX}${depositId}`;
+    const [counter] = await db.insert(platformSettings).values({
+      key,
+      value: "1",
+      modifiedAt: new Date(),
+    }).onConflictDoUpdate({
+      target: platformSettings.key,
+      set: {
+        value: sql`(${platformSettings.value}::integer + 1)::text`,
+        modifiedAt: new Date(),
+      },
+    }).returning({ value: platformSettings.value });
+    return Number(counter.value);
+  }
+
+  async clearDrimPayStatusCheckCount(depositId: number): Promise<void> {
+    const key = `${DRIMPAY_STATUS_CHECK_SETTING_PREFIX}${depositId}`;
+    await db.delete(platformSettings).where(eq(platformSettings.key, key));
   }
 
   async claimDepositApproval(id: number): Promise<Deposit | undefined> {
@@ -1178,6 +1212,7 @@ export class DatabaseStorage implements IStorage {
     const allSettings = await db.select().from(platformSettings);
     const result: Record<string, string> = {};
     for (const s of allSettings) {
+      if (s.key.startsWith(DRIMPAY_STATUS_CHECK_SETTING_PREFIX)) continue;
       result[s.key] = s.value;
     }
     return result;

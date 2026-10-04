@@ -80,12 +80,13 @@ export default function AdminDeposits() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || `Erreur ${response.status}`);
-      return data as { status: string };
+      return data as { status: string; providerStatus?: string };
     },
-    onSuccess: ({ status }) => {
+    onSuccess: ({ status, providerStatus }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/deposits"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      const label = status === "approved" ? "confirmé" : status === "rejected" ? "refusé" : "toujours en traitement";
+      const checkedStatus = providerStatus || status;
+      const label = checkedStatus === "approved" ? "confirmé" : checkedStatus === "rejected" ? "refusé" : "toujours en traitement";
       toast({ title: "Statut DrimPay vérifié", description: `Le dépôt est ${label}.` });
     },
     onError: (error: any) => {
@@ -292,9 +293,9 @@ export default function AdminDeposits() {
                   )}
 
                   {/* Actions */}
-                  {(deposit.status === "pending" || deposit.status === "processing" || (isAshtech && deposit.status === "rejected")) && (
+                  {(deposit.status === "pending" || deposit.status === "processing" || ((isAshtech || isDrimPay) && deposit.status === "rejected")) && (
                     <div className="flex gap-2">
-                      {isDrimPay && deposit.status !== "rejected" && (
+                      {isDrimPay && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -315,7 +316,7 @@ export default function AdminDeposits() {
                         disabled={processingId === deposit.id}
                         data-testid={`button-approve-${deposit.id}`}
                       >
-                        {processingId === deposit.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-1" />{isAshtech && deposit.status === "rejected" ? "Valider malgré l'échec" : "Valider"}</>}
+                        {processingId === deposit.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-1" />{(isAshtech || isDrimPay) && deposit.status === "rejected" ? "Valider malgré l'échec" : "Valider"}</>}
                       </Button>
                       <Button
                         size="sm"

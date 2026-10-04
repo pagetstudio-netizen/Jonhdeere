@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 
 export const DRIMPAY_COUNTRIES = ["TG", "BJ", "BF", "ML", "SN", "CI", "CM"] as const;
 export type DrimPayCountry = (typeof DRIMPAY_COUNTRIES)[number];
+export const DRIMPAY_MAX_PAYIN_STATUS_CHECKS = 5;
 
 const API_BASES = {
   sandbox: "https://drimpay.com/sandbox-api/v2",
