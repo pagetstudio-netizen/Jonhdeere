@@ -255,7 +255,14 @@ export default function RobotPayPage() {
       setPaymentLinkUnavailable(Boolean(data.paymentLinkUnavailable));
       setMessage(data.message || "");
       setStatus(data.status || "processing");
-      setStep(data.status === "approved" ? 3 : 2);
+      if (data.status === "approved") {
+        setStep(3);
+      } else if (data.status === "rejected") {
+        setStep(1);
+        toast({ title: "Paiement refusé", variant: "destructive" });
+      } else {
+        setStep(2);
+      }
       if (data.status === "approved") {
         queryClient.invalidateQueries({ queryKey: ["/api/deposits/history"] });
       }
@@ -316,9 +323,9 @@ export default function RobotPayPage() {
   const submitPhone = () => {
     if (!phone.trim()) { toast({ title: "Numéro requis", description: "Saisissez le numéro Mobile Money utilisé.", variant: "destructive" }); return; }
     if (!operator) { toast({ title: "Opérateur requis", description: "Sélectionnez votre opérateur.", variant: "destructive" }); return; }
+    setPaymentLinkUnavailable(false);
     if (operator.manualNumber) manualMutation.mutate();
     else {
-      setPaymentLinkUnavailable(false);
       if (activeProvider === "ashtech") ashtechMutation.mutate(undefined);
       else if (activeProvider === "drimpay") drimpayMutation.mutate();
       else sendavaMutation.mutate();
