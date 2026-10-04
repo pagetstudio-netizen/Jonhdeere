@@ -1,1 +1,0 @@
-import{c as e}from"./createLucideIcon-DyQwrgMf.js";const o=[["path",{d:"m15 18-6-6 6-6",key:"1wnfg3"}]],s=e("chevron-left",o);const c=[["path",{d:"M18 21a8 8 0 0 0-16 0",key:"3ypg7q"}],["circle",{cx:"10",cy:"8",r:"5",key:"o932ke"}],["path",{d:"M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3",key:"10s06x"}]],t=e("users-round",c);export{s as C,t as U};

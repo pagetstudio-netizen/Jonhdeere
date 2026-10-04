@@ -1,4 +1,4 @@
-import{j as e}from"./index-CLpBJlv4.js";/* empty css               */function n(){return e.jsxs("main",{className:"checkin-mockup",children:[e.jsx("style",{children:`
+import{j as e}from"./index-Fu--8GAx.js";/* empty css               */function n(){return e.jsxs("main",{className:"checkin-mockup",children:[e.jsx("style",{children:`
         .checkin-mockup { background: #f4f4f4; }
         .checkin-screen {
           width: 100%;

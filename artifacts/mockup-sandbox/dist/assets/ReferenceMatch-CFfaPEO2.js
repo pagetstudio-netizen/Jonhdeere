@@ -1,4 +1,4 @@
-import{r as n,j as e}from"./index-CLpBJlv4.js";/* empty css               */function a(){const[i,c]=n.useState(!1);return e.jsxs("main",{className:"reference-checkin",children:[e.jsx("style",{children:`
+import{r as n,j as e}from"./index-Fu--8GAx.js";/* empty css               */function a(){const[i,c]=n.useState(!1);return e.jsxs("main",{className:"reference-checkin",children:[e.jsx("style",{children:`
         .reference-checkin {
           --ink: #1c252e;
           --blue: #2d70c7;
