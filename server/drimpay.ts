@@ -107,6 +107,7 @@ export function getDrimPayOperatorSlug(country: string, operatorName: string): s
   }
 
   if (!slug || !OPERATOR_SLUGS.has(slug)) return undefined;
+  if (slug === "wave" && code !== "CI" && code !== "SN") return undefined;
   return slug;
 }
 
@@ -125,6 +126,19 @@ export function drimPayOperatorsForCountry(country: string, configuredOperators:
     });
   }
   return Array.from(bySlug.values());
+}
+
+export function getDrimPayWavePaymentUrl(country: string, operator: string, value: unknown) {
+  if (getDrimPayOperatorSlug(country, operator) !== "wave" || typeof value !== "string") {
+    return undefined;
+  }
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.hostname !== "pay.wave.com") return undefined;
+    return url.toString();
+  } catch {
+    return undefined;
+  }
 }
 
 export function normalizeDrimPayPhone(phone: string, phonePrefix: string) {

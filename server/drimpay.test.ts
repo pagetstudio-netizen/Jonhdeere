@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import test from "node:test";
 import {
   drimPayOperatorsForCountry,
+  getDrimPayWavePaymentUrl,
   getDrimPayOperatorSlug,
   isDrimPayCountry,
   mapDrimPayStatus,
@@ -23,6 +24,28 @@ test("DrimPay only exposes supported countries and mapped local operators", () =
       { id: "moov", name: "Moov", requiresOtp: false },
     ],
   );
+});
+
+test("DrimPay only maps Wave in Côte d'Ivoire and Senegal", () => {
+  assert.equal(getDrimPayOperatorSlug("CI", "Wave"), "wave");
+  assert.equal(getDrimPayOperatorSlug("SN", "Wave"), "wave");
+  assert.equal(getDrimPayOperatorSlug("SN", "Wave Money"), "wave");
+  assert.equal(getDrimPayOperatorSlug("TG", "Wave"), undefined);
+  assert.deepEqual(
+    drimPayOperatorsForCountry("SN", ["Wave"]),
+    [{ id: "wave", name: "Wave", requiresOtp: false }],
+  );
+  assert.deepEqual(drimPayOperatorsForCountry("TG", ["Wave"]), []);
+});
+
+test("DrimPay accepts only secure Wave checkout links for Wave pay-ins", () => {
+  const paymentUrl = "https://pay.wave.com/c/example?a=5000&c=XOF";
+  assert.equal(getDrimPayWavePaymentUrl("CI", "wave", paymentUrl), paymentUrl);
+  assert.equal(getDrimPayWavePaymentUrl("SN", "Wave", paymentUrl), paymentUrl);
+  assert.equal(getDrimPayWavePaymentUrl("TG", "wave", paymentUrl), undefined);
+  assert.equal(getDrimPayWavePaymentUrl("CI", "tmoney", paymentUrl), undefined);
+  assert.equal(getDrimPayWavePaymentUrl("CI", "wave", "http://pay.wave.com/example"), undefined);
+  assert.equal(getDrimPayWavePaymentUrl("CI", "wave", "https://example.com/pay"), undefined);
 });
 
 test("DrimPay normalizes local and international phone numbers", () => {

@@ -76,6 +76,7 @@ import {
   drimPayInitiatePayin,
   drimPayInitiatePayout,
   drimPayOperatorsForCountry,
+  getDrimPayWavePaymentUrl,
   getDrimPayOperatorSlug,
   getDrimPayWebhookSecret,
   isDrimPayConfigured,
@@ -1728,6 +1729,10 @@ export async function registerRoutes(
       if (!reference) {
         throw new Error("DrimPay n'a pas retourné de référence de transaction.");
       }
+      const paymentUrl = getDrimPayWavePaymentUrl(country, operator.id, initiated.payment_url);
+      if (operator.id === "wave" && !paymentUrl) {
+        throw new Error("Lien de paiement Wave indisponible.");
+      }
       await storage.updateDeposit(deposit.id, { drimpayReference: reference });
       const updated = await reconcileDrimPayDeposit(
         { ...deposit, drimpayOrderId: orderId, drimpayReference: reference },
@@ -1737,6 +1742,7 @@ export async function registerRoutes(
         depositId: deposit.id,
         reference,
         status: updated.status,
+        paymentUrl: paymentUrl || null,
         message: typeof initiated.message === "string" ? initiated.message : "",
       });
     } catch (error: any) {

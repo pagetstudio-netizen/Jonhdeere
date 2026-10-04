@@ -108,7 +108,7 @@ export default function RobotPayPage() {
     queryFn: async () => {
       const response = await fetch(`/api/drimpay/operators/${encodeURIComponent(country)}`, { credentials: "include" });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Impossible de charger les opérateurs DrimPay");
+      if (!response.ok) throw new Error(data.message || "Impossible de charger les opérateurs de paiement");
       return data;
     },
     enabled: !!providerInfo && availableProviders.some(item => item.provider === "drimpay") && !!country,
@@ -130,7 +130,9 @@ export default function RobotPayPage() {
   const drimpayOperators: Operator[] = availableProviders.some(item => item.provider === "drimpay")
     ? (drimpayData?.operators || []).map(operator => ({ ...operator, provider: "drimpay" as const }))
     : [];
-  const automaticOperators: Operator[] = [...ashtechOperators, ...sendavaOperators, ...drimpayOperators];
+  // When enabled for the country, DrimPay is selected automatically for its
+  // supported operators. AshTechPay and SendavaPay remain the existing fallbacks.
+  const automaticOperators: Operator[] = [...drimpayOperators, ...ashtechOperators, ...sendavaOperators];
   const normalizeOperatorName = (value: unknown) =>
     String(value || "")
       .normalize("NFD")
@@ -153,7 +155,6 @@ export default function RobotPayPage() {
   };
   const uniqueAutomaticOperators = automaticOperators.filter((automatic, index, list) =>
     list.findIndex(candidate =>
-      candidate.provider === automatic.provider &&
       getOperatorIdentifiers(candidate).some(candidateName =>
         getOperatorIdentifiers(automatic).some(automaticName =>
           operatorNamesMatch(candidateName, automaticName)
@@ -164,9 +165,11 @@ export default function RobotPayPage() {
   const automaticManualMatches = new Set<number>();
   const operators: Operator[] = [
     ...uniqueAutomaticOperators.map(automatic => {
-      const manualNumber = manualNumbers.find(number =>
-        !automaticManualMatches.has(number.id) && matchesManualOperator(automatic, number),
-      );
+      const manualNumber = automatic.provider === "drimpay"
+        ? undefined
+        : manualNumbers.find(number =>
+            !automaticManualMatches.has(number.id) && matchesManualOperator(automatic, number),
+          );
       if (manualNumber) automaticManualMatches.add(manualNumber.id);
       return manualNumber ? { ...automatic, manualNumber } : automatic;
     }),
@@ -247,6 +250,7 @@ export default function RobotPayPage() {
     },
     onSuccess: (data) => {
       setDepositId(data.depositId);
+      setRedirectUrl(typeof data.paymentUrl === "string" ? data.paymentUrl : "");
       setMessage(data.message || "");
       setStatus(data.status || "processing");
       setStep(data.status === "approved" ? 3 : 2);
@@ -254,7 +258,11 @@ export default function RobotPayPage() {
         queryClient.invalidateQueries({ queryKey: ["/api/deposits/history"] });
       }
     },
-    onError: (error: any) => toast({ title: "Erreur DrimPay", description: error.message, variant: "destructive" }),
+    onError: () => toast({
+      title: "Erreur de paiement",
+      description: "Impossible d'initier le paiement. Veuillez réessayer.",
+      variant: "destructive",
+    }),
   });
   const manualMutation = useMutation({
     mutationFn: async () => {
@@ -371,7 +379,7 @@ export default function RobotPayPage() {
             <div className="space-y-5">
               <p className="px-1 text-xl text-white">Sélectionnez le mode de paiement :</p>
                {loadingOperators ? <Loader2 className="w-7 h-7 animate-spin mx-auto text-blue-500" /> : operators.length === 0 ? <EmptyState size="compact" className="text-center text-gray-500"><p>Aucun opérateur disponible pour ce pays.</p></EmptyState> : (
-                  <div className="space-y-3">{operators.map((op, i) => <button key={`${op.provider || "manual"}-${op.id || op.name}-${i}`} onClick={() => chooseOperator(op)} className={`w-full flex items-center justify-between rounded-lg px-4 py-4 border-2 text-left ${operator === op ? "border-[#2885d8] bg-blue-50" : "border-gray-100 bg-white shadow-sm"}`}><span><span className="block font-semibold text-lg text-[#14538a]">{op.name}</span><span className="block text-xs text-gray-500">{op.manualNumber ? (op.manualNumber.paymentLink ? "Paiement par lien" : "Paiement par numéro") : `Paiement automatique${op.provider ? ` — ${availableProviders.find(item => item.provider === op.provider)?.name || op.provider}` : ""}`}</span></span><ChevronRight className="text-gray-400" /></button>)}</div>
+                  <div className="space-y-3">{operators.map((op, i) => <button key={`${op.provider || "manual"}-${op.id || op.name}-${i}`} onClick={() => chooseOperator(op)} className={`w-full flex items-center justify-between rounded-lg px-4 py-4 border-2 text-left ${operator === op ? "border-[#2885d8] bg-blue-50" : "border-gray-100 bg-white shadow-sm"}`}><span><span className="block font-semibold text-lg text-[#14538a]">{op.name}</span><span className="block text-xs text-gray-500">{op.manualNumber ? (op.manualNumber.paymentLink ? "Paiement par lien" : "Paiement par numéro") : "Paiement automatique"}</span></span><ChevronRight className="text-gray-400" /></button>)}</div>
               )}
             </div>
           )}
