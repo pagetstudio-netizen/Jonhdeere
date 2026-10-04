@@ -594,52 +594,6 @@ export default function AdminSettings({ isSuperAdmin }: AdminSettingsProps) {
           </CardContent>
         </Card>
 
-        {/* ── SendavaPay ── */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Zap className="w-5 h-5 text-orange-500" />
-              SendavaPay — Paiement automatique
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-xl border p-3">
-              <div>
-                <p className="text-sm font-semibold text-gray-800">Activer SendavaPay</p>
-                <p className="text-xs text-gray-500">Affiche l'option de paiement automatique Mobile Money</p>
-              </div>
-              <FormField control={form.control} name="sendavapayEnabled" render={({ field }) => (
-                <FormItem className="flex items-center gap-2 space-y-0">
-                  <FormLabel className="text-xs text-gray-500">{field.value ? "Actif" : "Désactivé"}</FormLabel>
-                  <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )} />
-            </div>
-            <FormField control={form.control} name="sendavapayChannelName" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nom du canal affiché</FormLabel>
-                <FormControl><Input {...field} placeholder="SendavaPay" /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="sendavapayWebhookSecret" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Webhook Secret</FormLabel>
-                <FormControl><Input {...field} type="password" placeholder="whsec_..." /></FormControl>
-                 <FormDescription className="text-xs">Configurez SENDAVAPAY_WEBHOOK_SECRET dans les Secrets/variables d'environnement du serveur. Cette variable est prioritaire et obligatoire pour accepter les webhooks.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <div className="rounded-xl bg-orange-50 border border-orange-100 p-3 text-xs text-orange-700 space-y-1">
-              <p className="font-semibold">Configuration requise :</p>
-              <p>1. Ajoutez la variable d'environnement <code className="bg-orange-100 px-1 rounded">SENDAVAPAY_API_KEY</code> avec votre clé SDK (commence par <code className="bg-orange-100 px-1 rounded">sdk_</code>)</p>
-               <p>2. Ajoutez le secret Webhook dans SENDAVAPAY_WEBHOOK_SECRET, puis configurez l'URL webhook dans votre compte SendavaPay : <code className="bg-orange-100 px-1 rounded">/api/webhooks/sendavapay</code></p>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* ── WestPay ── */}
         <Card>
           <CardHeader className="pb-2">
