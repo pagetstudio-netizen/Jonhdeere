@@ -18,7 +18,7 @@ import bankAccountIcon from "@assets/a96d355bc25b348d27c903a0be9d6798_1790690576
 import balanceIcon from "@assets/téléchargement_(63)_1790690576065.png";
 import type { WithdrawalWallet } from "@shared/schema";
 import { useAuth } from "@/lib/auth";
-import { getCountryByCode } from "@/lib/countries";
+import { getCountryByCode, type ApiCountry } from "@/lib/countries";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,10 @@ export default function AccountPage() {
     () => new URLSearchParams(window.location.search).get("giftCode") === "open",
   );
   const [adminPin, setAdminPin] = useState("");
+
+  const { data: apiCountries = [] } = useQuery<ApiCountry[]>({
+    queryKey: ["/api/countries"],
+  });
 
   const { data: teamStats, isLoading: teamStatsLoading, isError: teamStatsError } =
     useQuery<TeamStatsSummary>({
@@ -74,7 +78,7 @@ export default function AccountPage() {
 
   if (!user) return null;
 
-  const country = getCountryByCode(user.country);
+  const country = getCountryByCode(user.country, apiCountries);
   const currency = country?.currency || "XOF";
   const formatAmount = (value: string | number | null | undefined) => {
     const amount = Number(value || 0);
@@ -129,7 +133,7 @@ export default function AccountPage() {
             <div className="account-profile-copy">
               <h1>{user.fullName || "Mon compte"}</h1>
               <p>
-                +{country?.phonePrefix || ""} {user.phone}
+                {country?.phonePrefix ? `+${country.phonePrefix} ${user.phone}` : user.phone}
               </p>
             </div>
           </div>
