@@ -1,0 +1,1 @@
+import{j as t}from"./index-CCHZDKuj.js";const r="/assets/20260731_184420_1790710016752-Bwxvuh56.png";function i({children:e,className:s="",size:a="default"}){return t.jsxs("div",{className:`shared-empty-state shared-empty-state-${a} ${s}`.trim(),children:[t.jsx("img",{className:"shared-empty-state-image",src:r,alt:"","aria-hidden":"true"}),e]})}export{i as E};
