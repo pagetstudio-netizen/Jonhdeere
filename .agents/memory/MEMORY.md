@@ -9,3 +9,4 @@
 - [InPay IP whitelist](inpay-ip-whitelist.md) — InPay rejects API calls with errno 5 until the server's public egress IP is whitelisted.
 - [AshtechPay Burkina flow](ashtechpay-burkina.md) — BF uses exact operator names and requires the returned reference on OTP retries.
 - [PPayPros live validation](ppaypros-live-validation.md) — Keep payin/payout disabled until the XOF amount scale and mobile-wallet payout compatibility are verified with the merchant.
+- [Toast appearance](toast-notifications.md) — Keep John Deere toasts as compact, centered charcoal popups with a white exclamation and copy; leave RobotPay's legacy toast style unchanged.
