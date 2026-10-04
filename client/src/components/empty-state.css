@@ -9,13 +9,13 @@
 
 .shared-empty-state-image {
   display: block;
-  width: min(132px, 100%);
-  height: 88px;
+  width: min(180px, 100%);
+  height: 132px;
   flex: 0 0 auto;
   object-fit: contain;
 }
 
 .shared-empty-state-compact .shared-empty-state-image {
-  width: min(88px, 100%);
-  height: 60px;
+  width: min(128px, 100%);
+  height: 94px;
 }
