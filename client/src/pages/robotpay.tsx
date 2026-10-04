@@ -40,9 +40,6 @@ export default function RobotPayPage() {
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
   const amount = Number(params.get("amount") || 0);
   const country = (params.get("country") || "").toUpperCase();
-  const feePaymentId = Number(params.get("feePaymentId") || 0) || undefined;
-  const withdrawalAmount = Number(params.get("withdrawalAmount") || 0) || undefined;
-  const isWithdrawalFeePayment = Boolean(feePaymentId);
   // 0 = operator, 1 = phone, 2 = confirmation, 3 = success
   const [step, setStep] = useState(0);
   const [phone, setPhone] = useState("");
@@ -170,7 +167,6 @@ export default function RobotPayPage() {
       if (!operator?.id) throw new Error("Sélectionnez un opérateur");
       const created = await apiRequest("POST", "/api/sendavapay/create", {
         amount, country, operatorId: operator.id, operatorName: operator.name, payerPhone: paymentPhone,
-        feePaymentId,
       });
       if (!created.ok) throw new Error((await created.json()).message || "Création impossible");
       const data = await created.json();
@@ -196,7 +192,6 @@ export default function RobotPayPage() {
       const res = await apiRequest("POST", "/api/ashtechpay/collect", {
         amount, country, operator: operator.name, phone: phone.replace(/\D/g, ""),
         depositId: depositId || undefined, otp: otpCode || undefined,
-        feePaymentId,
       });
       if (!res.ok) throw new Error((await res.json()).message || "Initiation impossible");
       return res.json();
@@ -227,7 +222,6 @@ export default function RobotPayPage() {
       if (!screenshot) throw new Error("Ajoutez la capture d'écran du paiement");
       const res = await apiRequest("POST", "/api/deposits", {
         amount,
-        feePaymentId,
         accountName: user?.fullName || "",
         accountNumber: paymentPhone,
         paymentMethod: number.operatorName,

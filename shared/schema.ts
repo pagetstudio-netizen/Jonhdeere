@@ -112,7 +112,6 @@ export const deposits = pgTable("deposits", {
   westpayReference: text("westpay_reference"),
   ashtechTransactionId: text("ashtech_transaction_id"),
   ashtechReference: text("ashtech_reference"),
-  withdrawalFeePaymentId: integer("withdrawal_fee_payment_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   processedAt: timestamp("processed_at"),
   processedBy: integer("processed_by"),
@@ -137,19 +136,6 @@ export const withdrawals = pgTable("withdrawals", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   processedAt: timestamp("processed_at"),
   processedBy: integer("processed_by"),
-});
-
-// Payments required before a withdrawal can be submitted.
-export const withdrawalFeePayments = pgTable("withdrawal_fee_payments", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  withdrawalAmount: integer("withdrawal_amount").notNull(),
-  requiredAmount: integer("required_amount").notNull(),
-  status: text("status").notNull().default("pending"), // pending, paid, used
-  depositId: integer("deposit_id"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  paidAt: timestamp("paid_at"),
-  usedAt: timestamp("used_at"),
 });
 
 // Payment channels (kept for withdrawal compatibility)
@@ -408,7 +394,6 @@ export type Product = typeof products.$inferSelect;
 export type UserProduct = typeof userProducts.$inferSelect;
 export type Deposit = typeof deposits.$inferSelect;
 export type Withdrawal = typeof withdrawals.$inferSelect;
-export type WithdrawalFeePayment = typeof withdrawalFeePayments.$inferSelect;
 export type WithdrawalWallet = typeof withdrawalWallets.$inferSelect;
 export type PaymentChannel = typeof paymentChannels.$inferSelect;
 export type ReferralCommission = typeof referralCommissions.$inferSelect;

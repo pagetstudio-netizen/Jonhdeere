@@ -26,24 +26,10 @@ export async function seed() {
     ALTER TABLE "payment_numbers" ADD COLUMN IF NOT EXISTS "payment_link" text
   `).catch(() => undefined);
   await db.execute(sql`
-    ALTER TABLE "deposits" ADD COLUMN IF NOT EXISTS "withdrawal_fee_payment_id" integer
+    DROP TABLE IF EXISTS "withdrawal_fee_payments"
   `).catch(() => undefined);
   await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS "withdrawal_fee_payments" (
-      "id" serial PRIMARY KEY,
-      "user_id" integer NOT NULL REFERENCES "users"("id"),
-      "withdrawal_amount" integer NOT NULL,
-      "required_amount" integer NOT NULL,
-      "status" text NOT NULL DEFAULT 'pending',
-      "deposit_id" integer,
-      "created_at" timestamp NOT NULL DEFAULT now(),
-      "paid_at" timestamp,
-      "used_at" timestamp
-    )
-  `).catch(() => undefined);
-  await db.execute(sql`
-    CREATE INDEX IF NOT EXISTS "withdrawal_fee_payments_user_status_idx"
-      ON "withdrawal_fee_payments" ("user_id", "status")
+    ALTER TABLE "deposits" DROP COLUMN IF EXISTS "withdrawal_fee_payment_id"
   `).catch(() => undefined);
 
   // Ensure countries table exists
@@ -164,6 +150,34 @@ export async function seed() {
     console.log("Products seeded (first install)");
   } else {
     console.log(`Products skipped — ${existingProducts.length} existing products preserved`);
+  }
+
+  // Apply the supplied John Deere price list once, updating matching sort orders and adding missing rows.
+  const productCatalogMigrationKey = "johnDeereProductCatalogV1";
+  const productCatalogMigration = await db.select({ key: platformSettings.key })
+    .from(platformSettings)
+    .where(eq(platformSettings.key, productCatalogMigrationKey))
+    .limit(1);
+  if (productCatalogMigration.length === 0) {
+    const currentCatalogProducts = await db.select().from(products);
+    const productsBySortOrder = new Map(
+      currentCatalogProducts.map((product) => [product.sortOrder, product]),
+    );
+    for (const productData of JOHN_DEERE_PRODUCT_CATALOG) {
+      const existing = productsBySortOrder.get(productData.sortOrder);
+      const values = {
+        ...productData,
+        isFree: false,
+        isActive: true,
+      };
+      if (existing) {
+        await db.update(products).set(values).where(eq(products.id, existing.id));
+      } else {
+        await db.insert(products).values(values);
+      }
+    }
+    await db.insert(platformSettings).values({ key: productCatalogMigrationKey, value: "1" });
+    console.log("John Deere product values synchronized with the supplied price list");
   }
 
   // Replace the legacy catalog artwork once, without overwriting later admin edits.

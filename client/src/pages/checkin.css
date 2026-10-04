@@ -249,10 +249,29 @@
   text-decoration: underline;
 }
 
-@media (max-width: 430px) {
+@media (max-width: 576px) {
+  .checkin-back {
+    top: max(12px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    z-index: 5;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    max-width: 48px;
+    border-radius: 50%;
+    background: var(--checkin-green);
+    color: #fff;
+  }
+
+  .checkin-back svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+  }
+
   .checkin-intro {
-    height: min(31vh, 272px);
-    padding-top: min(22vh, 192px);
+    height: auto;
+    padding: 16px 12px 12px;
   }
 
   .checkin-total {
@@ -260,14 +279,14 @@
   }
 
   .checkin-intro-title {
-    margin-top: 3.1cqw;
+    margin-top: 8px;
     font-size: clamp(17px, 5.2cqw, 22px);
   }
 
   .checkin-stats {
-    height: min(18.4vh, 161px);
-    margin-top: min(6.8vh, 59px);
-    padding: min(4.6cqw, 20px) 1.6cqw 2.4cqw;
+    height: 126px;
+    margin-top: 14px;
+    padding: 14px 1.6cqw 8px;
   }
 
   .checkin-stat-value {
@@ -281,9 +300,9 @@
   }
 
   .checkin-claim {
-    height: min(7.9vh, 69px);
+    height: 54px;
     min-height: 50px;
-    margin-top: min(2.75vh, 24px);
+    margin-top: 14px;
     margin-bottom: max(8px, env(safe-area-inset-bottom));
     font-size: clamp(20px, 7.2cqw, 30px);
   }

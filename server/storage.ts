@@ -1,12 +1,10 @@
 import { 
   users, products, userProducts, deposits, withdrawals, withdrawalWallets,
-  withdrawalFeePayments,
   paymentChannels, paymentNumbers, stakingProducts, userStakings, referralCommissions, tasks, userTasks, transactions, platformSettings, adminAuditLog,
   giftCodes, giftCodeClaims, countries,
   type User, type Product, type UserProduct, type Deposit, type Withdrawal, type WithdrawalWallet,
   type PaymentChannel, type PaymentNumber, type StakingProduct, type UserStaking, type ReferralCommission, type Task, type UserTask, type Transaction, type PlatformSetting,
   type GiftCode, type GiftCodeClaim, type Country
-  , type WithdrawalFeePayment
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, gte, lte, or, isNull } from "drizzle-orm";
@@ -56,11 +54,6 @@ export interface IStorage {
   processDepositReferralCommissions(userId: number, amount: number): Promise<void>;
   
   // Withdrawals
-  createWithdrawalFeePayment(data: Partial<WithdrawalFeePayment>): Promise<WithdrawalFeePayment>;
-  getWithdrawalFeePayment(id: number): Promise<WithdrawalFeePayment | undefined>;
-  getActiveWithdrawalFeePayment(userId: number, withdrawalAmount: number): Promise<WithdrawalFeePayment | undefined>;
-  markWithdrawalFeePaymentPaid(id: number, depositId: number): Promise<WithdrawalFeePayment | undefined>;
-  claimWithdrawalFeePayment(userId: number, withdrawalAmount: number): Promise<WithdrawalFeePayment | undefined>;
   createWithdrawal(data: Partial<Withdrawal>): Promise<Withdrawal>;
   getWithdrawals(status?: string): Promise<(Withdrawal & { user: User })[]>;
   getUserWithdrawals(userId: number): Promise<Withdrawal[]>;
@@ -705,62 +698,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Withdrawals
-  async createWithdrawalFeePayment(data: Partial<WithdrawalFeePayment>): Promise<WithdrawalFeePayment> {
-    const [payment] = await db.insert(withdrawalFeePayments).values(data as any).returning();
-    return payment;
-  }
-
-  async getWithdrawalFeePayment(id: number): Promise<WithdrawalFeePayment | undefined> {
-    const [payment] = await db.select().from(withdrawalFeePayments).where(eq(withdrawalFeePayments.id, id));
-    return payment;
-  }
-
-  async getActiveWithdrawalFeePayment(
-    userId: number,
-    withdrawalAmount: number,
-  ): Promise<WithdrawalFeePayment | undefined> {
-    const [payment] = await db.select()
-      .from(withdrawalFeePayments)
-      .where(and(
-        eq(withdrawalFeePayments.userId, userId),
-        eq(withdrawalFeePayments.withdrawalAmount, withdrawalAmount),
-        sql`${withdrawalFeePayments.status} IN ('pending', 'paid')`,
-      ))
-      .orderBy(desc(withdrawalFeePayments.createdAt))
-      .limit(1);
-    return payment;
-  }
-
-  async markWithdrawalFeePaymentPaid(
-    id: number,
-    depositId: number,
-  ): Promise<WithdrawalFeePayment | undefined> {
-    const [payment] = await db.update(withdrawalFeePayments)
-      .set({ status: "paid", depositId, paidAt: new Date() })
-      .where(and(
-        eq(withdrawalFeePayments.id, id),
-        sql`${withdrawalFeePayments.status} = 'pending'`,
-      ))
-      .returning();
-    if (payment) return payment;
-    return this.getWithdrawalFeePayment(id);
-  }
-
-  async claimWithdrawalFeePayment(
-    userId: number,
-    withdrawalAmount: number,
-  ): Promise<WithdrawalFeePayment | undefined> {
-    const [payment] = await db.update(withdrawalFeePayments)
-      .set({ status: "used", usedAt: new Date() })
-      .where(and(
-        eq(withdrawalFeePayments.userId, userId),
-        eq(withdrawalFeePayments.withdrawalAmount, withdrawalAmount),
-        sql`${withdrawalFeePayments.status} = 'paid'`,
-      ))
-      .returning();
-    return payment;
-  }
-
   async createWithdrawal(data: Partial<Withdrawal>): Promise<Withdrawal> {
     const [withdrawal] = await db.insert(withdrawals).values(data as any).returning();
     return withdrawal;

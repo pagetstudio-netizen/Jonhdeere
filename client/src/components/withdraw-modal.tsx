@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -13,7 +12,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, getCountryByCode } from "@/lib/countries";
 import { Loader2, AlertCircle, Clock, Wallet } from "lucide-react";
 import type { WithdrawalWallet } from "@shared/schema";
-import { useLocation } from "wouter";
 
 const withdrawSchema = z.object({
   amount: z.string().min(1, "Montant requis"),
@@ -29,8 +27,6 @@ interface WithdrawModalProps {
 export default function WithdrawModal({ open, onClose }: WithdrawModalProps) {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
-  const [, navigate] = useLocation();
-  const [isPreparingPayment, setIsPreparingPayment] = useState(false);
 
   const { data: wallets } = useQuery<WithdrawalWallet[]>({
     queryKey: ["/api/wallets"],
@@ -71,13 +67,7 @@ export default function WithdrawModal({ open, onClose }: WithdrawModalProps) {
       toast({ title: "Demande envoyée!", description: "Votre retrait est en attente de validation." });
       handleClose();
     },
-    onError: (error: any) => {
-      if (error.data?.code === "WITHDRAWAL_PREPAYMENT_REQUIRED" && error.data.paymentUrl) {
-        navigate(error.data.paymentUrl);
-        return;
-      }
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    },
+    onError: (error: Error) => toast({ title: "Erreur", description: error.message, variant: "destructive" }),
   });
 
   const handleClose = () => {
@@ -97,7 +87,6 @@ export default function WithdrawModal({ open, onClose }: WithdrawModalProps) {
   const amount = parseInt(form.watch("amount") || "0");
   const feeAmount = Math.round(amount * fees / 100);
   const netAmount = amount - feeAmount;
-  const withdrawalPrepayment = Math.max(1, Math.round(amount * 25 / 100));
 
   const canWithdraw = user.hasDeposited && user.hasActiveProduct && !user.isWithdrawalBlocked && defaultWallet;
   const isCameroonOrBenin = user.country === "CM" || user.country === "BJ";
@@ -106,23 +95,6 @@ export default function WithdrawModal({ open, onClose }: WithdrawModalProps) {
 
   const currentHour = new Date().getHours();
   const isWithinHours = currentHour >= actualStartHour && currentHour < actualEndHour;
-
-  const handlePayPrepayment = async () => {
-    if (amount < 1200) {
-      toast({ title: "Montant invalide", description: "Le montant minimum est de 1200 FCFA", variant: "destructive" });
-      return;
-    }
-    setIsPreparingPayment(true);
-    try {
-      const response = await apiRequest("POST", "/api/withdrawal-fee/prepare", { amount });
-      const data = await response.json();
-      navigate(data.paymentUrl);
-    } catch (error: any) {
-      toast({ title: "Paiement indisponible", description: error.message, variant: "destructive" });
-    } finally {
-      setIsPreparingPayment(false);
-    }
-  };
 
   return (
     <>
@@ -325,23 +297,6 @@ export default function WithdrawModal({ open, onClose }: WithdrawModalProps) {
                   </div>
                 </div>
               )}
-
-              <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 space-y-2">
-                <p className="font-semibold">Paiement obligatoire avant le retrait</p>
-                <p>
-                  Payez 25 % du montant du retrait, soit{" "}
-                  {formatCurrency(withdrawalPrepayment, user.country)}, avant de demander le retrait.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full border-amber-400 bg-white text-amber-900 hover:bg-amber-100"
-                  onClick={handlePayPrepayment}
-                  disabled={isPreparingPayment || amount < 1200}
-                >
-                  {isPreparingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : "Payer"}
-                </Button>
-              </div>
 
               <Button
                 type="submit"
