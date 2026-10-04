@@ -158,7 +158,12 @@ export default function DepositPage() {
   });
   const svOperators = (svOperatorsData?.data || []).filter(op => op.status === "online");
 
-  const { data: ashtechCountries = [], isLoading: ashtechCountriesLoading } = useQuery<AshtechCountry[]>({
+  const {
+    data: ashtechCountries = [],
+    isLoading: ashtechCountriesLoading,
+    isError: ashtechCountriesFailed,
+    refetch: refetchAshtechCountries,
+  } = useQuery<AshtechCountry[]>({
     queryKey: ["/api/ashtechpay/countries"],
     queryFn: async () => {
       const res = await fetch("/api/ashtechpay/countries", { credentials: "include" });
@@ -171,7 +176,10 @@ export default function DepositPage() {
     activeDepositCountries.some(active => active.code.toUpperCase() === c.code.toUpperCase()) &&
     (!ashtechConfiguredCountryCodes || ashtechConfiguredCountryCodes.includes(c.code.toUpperCase()))
   );
-  const selectedAshtechCountry = availableAshtechCountries.find(c => c.code === ashtechCountry);
+  const selectedAshtechCountry = availableAshtechCountries.find(
+    c => c.code.trim().toUpperCase() === ashtechCountry.trim().toUpperCase(),
+  ) || availableAshtechCountries[0];
+  const selectedAshtechCountryCode = selectedAshtechCountry?.code || "";
   const ashtechOperators = selectedAshtechCountry?.operators || [];
 
   // Poll deposit status
@@ -441,7 +449,7 @@ export default function DepositPage() {
       if (!ashtechOperator || !ashtechPhone.trim()) throw new Error("Sélectionnez un opérateur et saisissez votre numéro");
       const res = await apiRequest("POST", "/api/ashtechpay/collect", {
         amount: Number(amount),
-        country: ashtechCountry,
+        country: selectedAshtechCountryCode,
         operator: ashtechOperator,
         phone: ashtechPhone.trim(),
         depositId: ashtechDepositId || undefined,
@@ -1273,8 +1281,19 @@ export default function DepositPage() {
       <div className="p-4 space-y-4 pb-10">
         <div>
           <p className="text-sm font-semibold text-gray-800 mb-2">Pays</p>
-          {ashtechCountriesLoading ? <Loader2 className="w-6 h-6 animate-spin text-[#00CC2C] mx-auto" /> : (
-            <select value={ashtechCountry} onChange={(e) => { setAshtechCountry(e.target.value); setAshtechOperator(""); }}
+          {ashtechCountriesLoading ? <Loader2 className="w-6 h-6 animate-spin text-[#00CC2C] mx-auto" /> : ashtechCountriesFailed ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center text-sm text-red-700">
+              <p>Impossible de charger les pays et opérateurs AshtechPay.</p>
+              <button type="button" onClick={() => void refetchAshtechCountries()} className="mt-2 font-semibold underline">
+                Réessayer
+              </button>
+            </div>
+          ) : availableAshtechCountries.length === 0 ? (
+            <EmptyState size="compact" className="text-sm text-gray-400 text-center py-5">
+              Aucun pays AshtechPay actif n’est disponible.
+            </EmptyState>
+          ) : (
+            <select value={selectedAshtechCountryCode} onChange={(e) => { setAshtechCountry(e.target.value); setAshtechOperator(""); }}
               className="w-full border border-gray-300 rounded-md px-4 py-4 text-sm text-gray-700 outline-none bg-white appearance-none">
               {availableAshtechCountries.map(c => <option key={c.code} value={c.code}>{c.name} ({c.currency})</option>)}
             </select>
@@ -1290,7 +1309,7 @@ export default function DepositPage() {
         </div>
         <div>
           <p className="text-sm font-semibold text-gray-800 mb-2">Opérateur Mobile Money</p>
-          {ashtechOperators.length === 0 ? <EmptyState size="compact" className="text-sm text-gray-400 text-center py-5">Aucun opérateur disponible pour ce pays</EmptyState> : (
+          {ashtechCountriesFailed ? null : ashtechOperators.length === 0 ? <EmptyState size="compact" className="text-sm text-gray-400 text-center py-5">Aucun opérateur disponible pour ce pays</EmptyState> : (
             <div className="space-y-2">
               {ashtechOperators.map((operator, index) => {
                 const name = typeof operator === "string" ? operator : (operator.name || operator.code || `Opérateur ${index + 1}`);
