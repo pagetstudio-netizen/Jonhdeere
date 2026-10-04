@@ -31,6 +31,8 @@ Configurer l’application avec :
 - **Mode :** production (`NODE_ENV=production`);
 - **Port :** laisser le serveur utiliser le port fourni par Plesk (`PORT`).
 
+Le fichier `.node-version` fixe la version majeure Node à 20 pour les gestionnaires de versions tels que `nodenv`; conserve-le dans le dépôt.
+
 Le script `npm start` lance `NODE_ENV=production node dist/index.cjs`. Ne pas utiliser `npm run dev` en production.
 
 Après le push GitHub :
