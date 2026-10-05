@@ -13,7 +13,6 @@ export interface AshtechCountry {
 }
 
 export interface AshtechCollectParams {
-  userId: string;
   amount: number;
   currency: string;
   phone: string;
@@ -61,6 +60,14 @@ function getApiKey() {
   return key;
 }
 
+function getAshtechProfileUserId() {
+  const userId = process.env.ASHTECHPAY_USER_ID?.trim();
+  if (!userId) {
+    throw new Error("AshtechPay non configuré : ASHTECHPAY_USER_ID est manquant");
+  }
+  return userId;
+}
+
 async function ashtechRequest(path: string, init: RequestInit = {}) {
   const response = await fetch(`${ASHTECHPAY_API_BASE}${path}`, {
     ...init,
@@ -83,10 +90,11 @@ export async function getCountries(): Promise<AshtechCountry[]> {
 }
 
 export async function collectPayment(params: AshtechCollectParams): Promise<AshtechCollectResponse> {
+  const userId = getAshtechProfileUserId();
   return ashtechRequest("/v1/collect", {
     method: "POST",
     body: JSON.stringify({
-      user_id: params.userId,
+      user_id: userId,
       amount: params.amount,
       currency: params.currency,
       phone: params.phone,
@@ -100,7 +108,9 @@ export async function collectPayment(params: AshtechCollectParams): Promise<Asht
 }
 
 export async function getTransaction(transactionId: string): Promise<AshtechCollectResponse> {
-  return ashtechRequest(`/v1/transaction/${encodeURIComponent(transactionId)}`);
+  const userId = getAshtechProfileUserId();
+  const query = new URLSearchParams({ user_id: userId });
+  return ashtechRequest(`/v1/transaction/${encodeURIComponent(transactionId)}?${query.toString()}`);
 }
 
 export function mapAshtechStatus(status: string | undefined): "pending" | "approved" | "rejected" {

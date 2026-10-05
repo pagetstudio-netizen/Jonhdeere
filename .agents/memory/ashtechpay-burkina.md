@@ -14,15 +14,16 @@ OTP USSD flow and returns a provider reference when the first request responds
 with `otp_required`; the retry must send that exact reference together with the
 OTP.
 
-Direct API `POST /v1/collect` also requires `user_id` as a string. Supply the
-stable local account ID from the authenticated server session, not from client
-input, and keep it the same for OTP retries.
+Direct API operations tied to a profile require the AshTech Pay profile
+`user_id` associated with the Bearer API key. This is a merchant/account ID, not
+the local app customer's ID. Keep it server-side in `ASHTECHPAY_USER_ID`, use it
+for both `/v1/collect` and `/v1/transaction/:id?user_id=...`, and reuse it for
+OTP retries.
 
-**Why:** AshtechPay rejects collect requests without `user_id`, and OTP
-confirmation fails if the retry does not preserve the provider-issued
-reference.
+**Why:** AshTech Pay returns `400 user_id_required` when the field is absent and
+`403 user_id_mismatch` when it does not match the Bearer key's profile.
 
 **How to apply:** Treat `/v1/countries` as the source of truth for operator
 names, and persist/reuse the reference from `otp_required` for the second
-`/v1/collect` request. Include the authenticated customer's string `user_id` in
-every `/v1/collect` request.
+`/v1/collect` request. Do not send a customer or session ID as the provider's
+`user_id`.

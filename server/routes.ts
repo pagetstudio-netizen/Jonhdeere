@@ -1909,7 +1909,6 @@ export async function registerRoutes(
         });
       }
       const result = await ashtechCollect({
-        userId: String(user.id),
         amount: numericAmount,
         currency: catalogCountry.currency,
         phone: String(phone).trim(),
