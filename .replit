@@ -59,3 +59,8 @@ expertMode = true
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 120000
+
+[userenv]
+
+[userenv.shared]
+ASHTECHPAY_USER_ID = "ASHTECH27319957"
