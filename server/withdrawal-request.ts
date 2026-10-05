@@ -4,6 +4,7 @@ export interface WithdrawalRequestStorage {
   getUser(userId: number): Promise<User | undefined>;
   getSettings(): Promise<Record<string, string>>;
   getTeamStats(userId: number): Promise<{ level1Invested: number }>;
+  getWallets(userId: number): Promise<WithdrawalWallet[]>;
   getDefaultWallet(userId: number): Promise<WithdrawalWallet | undefined>;
   getUserWithdrawalCountToday(userId: number): Promise<number>;
   updateUser(userId: number, data: Partial<User>): Promise<User>;
@@ -24,6 +25,7 @@ export async function requestWithdrawal(
   userId: number,
   rawAmount: unknown,
   storage: WithdrawalRequestStorage,
+  rawWalletId?: unknown,
 ) {
   const numericAmount = Number(rawAmount);
   const user = await storage.getUser(userId);
@@ -58,7 +60,26 @@ export async function requestWithdrawal(
     throw new WithdrawalRequestError("Solde insuffisant");
   }
 
-  const wallet = await storage.getDefaultWallet(user.id);
+  let wallet: WithdrawalWallet | undefined;
+  if (user.country.trim().toUpperCase() === "BJ") {
+    const selectedWalletId = typeof rawWalletId === "number"
+      ? rawWalletId
+      : typeof rawWalletId === "string" && rawWalletId.trim()
+        ? Number(rawWalletId)
+        : Number.NaN;
+    if (!Number.isSafeInteger(selectedWalletId) || selectedWalletId <= 0) {
+      throw new WithdrawalRequestError("Sélectionnez le portefeuille de retrait pour le Bénin.");
+    }
+
+    const userWallets = await storage.getWallets(user.id);
+    wallet = userWallets.find((candidate) => candidate.id === selectedWalletId);
+    if (!wallet || wallet.country.trim().toUpperCase() !== "BJ") {
+      throw new WithdrawalRequestError("Portefeuille de retrait invalide pour le Bénin.");
+    }
+  } else {
+    wallet = await storage.getDefaultWallet(user.id);
+  }
+
   if (!wallet) {
     throw new WithdrawalRequestError("Enregistrez un portefeuille de retrait");
   }

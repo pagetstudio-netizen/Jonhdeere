@@ -12,6 +12,7 @@ function createWithdrawalFixtures(overrides: {
   const user = {
     id: 42,
     fullName: "Utilisateur test",
+    country: "TG",
     balance: "10000.00",
     hasActiveProduct: true,
     isWithdrawalBlocked: false,
@@ -24,8 +25,17 @@ function createWithdrawalFixtures(overrides: {
     accountName: "Compte test",
     accountNumber: "000000000",
     paymentMethod: "Mobile Money",
-    country: "TG",
+    country: String(user.country),
     isDefault: true,
+  };
+  const alternateWallet = {
+    id: 9,
+    userId: 42,
+    accountName: "Autre compte",
+    accountNumber: "0102030405",
+    paymentMethod: "Moov Money",
+    country: String(user.country),
+    isDefault: false,
   };
   let nextWithdrawalId = 1;
 
@@ -47,6 +57,9 @@ function createWithdrawalFixtures(overrides: {
     async getDefaultWallet() {
       return wallet;
     },
+    async getWallets(userId: number) {
+      return userId === user.id ? [wallet, alternateWallet] : [];
+    },
     async getUserWithdrawalCountToday() {
       return overrides.todayCount ?? 0;
     },
@@ -62,13 +75,13 @@ function createWithdrawalFixtures(overrides: {
     },
   };
 
-  return { storage, updates, createdWithdrawals, user, wallet };
+  return { storage, updates, createdWithdrawals, user, wallet, alternateWallet };
 }
 
-test("standard authenticated withdrawal keeps ordinary fees and creates no deposit", async () => {
+test("non-Benin withdrawal keeps using the default wallet even if another wallet ID is sent", async () => {
   const fixtures = createWithdrawalFixtures();
 
-  const result = await requestWithdrawal(42, 5000, fixtures.storage);
+  const result = await requestWithdrawal(42, 5000, fixtures.storage, fixtures.alternateWallet.id);
 
   assert.equal(result.amount, 5000);
   assert.equal(result.netAmount, 4000);
@@ -100,6 +113,42 @@ test("standard authenticated withdrawal keeps ordinary fees and creates no depos
     false,
     "withdrawal should not link to a prepayment",
   );
+});
+
+test("Benin withdrawal uses the wallet selected by the user", async () => {
+  const fixtures = createWithdrawalFixtures({ user: { country: "BJ" } });
+
+  const result = await requestWithdrawal(42, 5000, fixtures.storage, fixtures.alternateWallet.id);
+
+  assert.equal(result.wallet.id, fixtures.alternateWallet.id);
+  assert.equal(result.withdrawal.accountName, fixtures.alternateWallet.accountName);
+  assert.equal(result.withdrawal.accountNumber, fixtures.alternateWallet.accountNumber);
+  assert.equal(result.withdrawal.country, "BJ");
+  assert.equal(result.withdrawal.paymentMethod, fixtures.alternateWallet.paymentMethod);
+});
+
+test("Benin withdrawal without a selected wallet is rejected before balance changes", async () => {
+  const fixtures = createWithdrawalFixtures({ user: { country: "BJ" } });
+
+  await assert.rejects(
+    requestWithdrawal(42, 5000, fixtures.storage),
+    { message: "Sélectionnez le portefeuille de retrait pour le Bénin." },
+  );
+
+  assert.deepEqual(fixtures.updates, []);
+  assert.deepEqual(fixtures.createdWithdrawals, []);
+});
+
+test("Benin withdrawal rejects a wallet that does not belong to the user", async () => {
+  const fixtures = createWithdrawalFixtures({ user: { country: "BJ" } });
+
+  await assert.rejects(
+    requestWithdrawal(42, 5000, fixtures.storage, 999),
+    { message: "Portefeuille de retrait invalide pour le Bénin." },
+  );
+
+  assert.deepEqual(fixtures.updates, []);
+  assert.deepEqual(fixtures.createdWithdrawals, []);
 });
 
 test("invalid withdrawal amount is rejected without changing balance or creating a withdrawal", async () => {

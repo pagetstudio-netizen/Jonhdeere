@@ -51,9 +51,10 @@ export default function WithdrawModal({ open, onClose }: WithdrawModalProps) {
   });
 
   const withdrawMutation = useMutation({
-    mutationFn: async (data: WithdrawForm) => {
+    mutationFn: async (data: WithdrawForm & { walletId: number }) => {
       const response = await apiRequest("POST", "/api/withdrawals", {
         amount: parseInt(data.amount),
+        walletId: data.walletId,
       });
       if (!response.ok) {
         const result = await response.json();
@@ -247,7 +248,13 @@ export default function WithdrawModal({ open, onClose }: WithdrawModalProps) {
           </div>
         ) : (
           <Form {...form}>
-            <form onSubmit={form.handleSubmit((data) => withdrawMutation.mutate(data))} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit((data) => {
+                if (!defaultWallet) return;
+                withdrawMutation.mutate({ ...data, walletId: defaultWallet.id });
+              })}
+              className="space-y-4"
+            >
               <div className="bg-secondary rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Wallet className="w-4 h-4 text-primary" />

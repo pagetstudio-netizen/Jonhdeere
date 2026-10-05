@@ -2689,6 +2689,7 @@ export async function registerRoutes(
         req.session.userId!,
         req.body?.amount,
         storage,
+        req.body?.walletId,
       );
 
       void sendTelegramMessage(

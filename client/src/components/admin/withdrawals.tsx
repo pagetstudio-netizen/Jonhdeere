@@ -221,7 +221,10 @@ export default function AdminWithdrawals() {
                       <p className="font-medium text-foreground">{withdrawal.user.fullName}</p>
                       {withdrawal.user.isPromoter && <Badge className="text-xs">Promoteur</Badge>}
                     </div>
-                    <p className="text-sm text-muted-foreground">{withdrawal.user.phone}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {withdrawal.user.country.trim().toUpperCase() === "BJ" && "Téléphone du compte : "}
+                      {withdrawal.user.phone}
+                    </p>
                     <p className="text-sm text-muted-foreground">Pays: {withdrawal.user.country}</p>
                   </div>
                   <Badge variant={
@@ -261,7 +264,11 @@ export default function AdminWithdrawals() {
                     <p className="font-medium text-foreground">{withdrawal.paymentMethod}</p>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-muted-foreground">Numéro de réception</p>
+                    <p className="text-muted-foreground">
+                      {withdrawal.country.trim().toUpperCase() === "BJ"
+                        ? "Numéro de réception du portefeuille choisi"
+                        : "Numéro de réception"}
+                    </p>
                     <p className="font-medium text-foreground">{withdrawal.accountNumber} - {withdrawal.accountName}</p>
                   </div>
                   <div className="col-span-2">
