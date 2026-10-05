@@ -13,6 +13,7 @@ export interface AshtechCountry {
 }
 
 export interface AshtechCollectParams {
+  userId: string;
   amount: number;
   currency: string;
   phone: string;
@@ -85,6 +86,7 @@ export async function collectPayment(params: AshtechCollectParams): Promise<Asht
   return ashtechRequest("/v1/collect", {
     method: "POST",
     body: JSON.stringify({
+      user_id: params.userId,
       amount: params.amount,
       currency: params.currency,
       phone: params.phone,

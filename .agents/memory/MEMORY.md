@@ -7,7 +7,7 @@
 - [Empty-state illustration](empty-state-illustration.md) — Use the user's uploaded illustration for genuine empty results across user, Admin, Banker, and RobotPay views; leave loading, errors, and payment progress unchanged.
 - [InPay callback classification](inpay-callbacks.md) — InPay payin and payout callbacks can both include order_number; classify using the merchant reference prefix first.
 - [InPay IP whitelist](inpay-ip-whitelist.md) — InPay rejects API calls with errno 5 until the server's public egress IP is whitelisted.
-- [AshtechPay Burkina flow](ashtechpay-burkina.md) — BF uses exact operator names and requires the returned reference on OTP retries.
+- [AshtechPay integration](ashtechpay-burkina.md) — `/v1/collect` requires a server-supplied `user_id`; preserve exact operators and OTP references.
 - [PPayPros live validation](ppaypros-live-validation.md) — Keep payin/payout disabled until the XOF amount scale and mobile-wallet payout compatibility are verified with the merchant.
 - [Toast appearance](toast-notifications.md) — Keep John Deere toasts as compact, centered charcoal popups with a white exclamation and copy; leave RobotPay's legacy toast style unchanged.
 - [Transaction history rules](transaction-history-rules.md) — User histories omit provider names; deposits show no fees; admins search by the shared `deqmsll` order number.
